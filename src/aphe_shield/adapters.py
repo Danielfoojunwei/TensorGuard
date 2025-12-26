@@ -49,47 +49,25 @@ class VLAAdapter:
     @classmethod
     def from_pi0(cls, model_path: str) -> "VLAAdapter":
         """Create adapter for Pi0 VLA."""
-        # Import Pi0-specific modules
-        try:
-            from .adapters.pi0_adapter import load_pi0, pi0_gradient, pi0_apply
-            model = load_pi0(model_path)
-            return cls(model, pi0_gradient, pi0_apply)
-        except ImportError:
-            logger.warning("Pi0 adapter not available, using mock")
-            return cls._create_mock_adapter()
+        from .adapters.pi0_adapter import load_pi0, pi0_gradient, pi0_apply
+        model = load_pi0(model_path)
+        return cls(model, pi0_gradient, pi0_apply)
     
     @classmethod
     def from_openvla(cls, model_path: str) -> "VLAAdapter":
         """Create adapter for OpenVLA."""
-        try:
-            from .adapters.openvla_adapter import load_openvla, openvla_gradient, openvla_apply
-            model = load_openvla(model_path)
-            return cls(model, openvla_gradient, openvla_apply)
-        except ImportError:
-            logger.warning("OpenVLA adapter not available, using mock")
-            return cls._create_mock_adapter()
+        from .adapters.openvla_adapter import load_openvla, openvla_gradient, openvla_apply
+        model = load_openvla(model_path)
+        return cls(model, openvla_gradient, openvla_apply)
     
     @classmethod
     def from_rt2(cls, model_path: str) -> "VLAAdapter":
         """Create adapter for RT-2."""
-        try:
-            from .adapters.rt2_adapter import load_rt2, rt2_gradient, rt2_apply
-            model = load_rt2(model_path)
-            return cls(model, rt2_gradient, rt2_apply)
-        except ImportError:
-            logger.warning("RT-2 adapter not available, using mock")
-            return cls._create_mock_adapter()
+        from .adapters.rt2_adapter import load_rt2, rt2_gradient, rt2_apply
+        model = load_rt2(model_path)
+        return cls(model, rt2_gradient, rt2_apply)
     
     @classmethod
     def from_custom(cls, model: Any, gradient_fn: Callable, apply_fn: Callable) -> "VLAAdapter":
         """Create adapter for custom VLA architecture."""
         return cls(model, gradient_fn, apply_fn)
-    
-    @classmethod
-    def _create_mock_adapter(cls) -> "VLAAdapter":
-        """Create mock adapter for testing."""
-        def mock_gradient(model, demo):
-            return {"layer.weight": np.random.randn(256, 256).astype(np.float32)}
-        def mock_apply(model, grads):
-            pass
-        return cls(None, mock_gradient, mock_apply)

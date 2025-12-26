@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import webbrowser
 from typing import Optional
-from moai_shield import EdgeClient, ShieldConfig, VLAAdapter, Demonstration, create_client
+from aphe_shield import EdgeClient, ShieldConfig, VLAAdapter, Demonstration, create_client
 import numpy as np
 import logging
 
@@ -23,60 +23,9 @@ logger = logging.getLogger("dashboard")
 client: Optional[EdgeClient] = None
 is_running = False
 
-# Mock VLA Adapter for Showcase
-class ShowcaseAdapter(VLAAdapter):
-    def __init__(self):
-        pass
-    def compute_gradients(self, demo):
-        # Simulate gradient computation latency
-        time.sleep(0.1)
-        # Return fake gradients
-        return {
-            "vision_encoder.weight": np.random.randn(10, 10).astype(np.float32),
-            "llm_backbone.attn_q.weight": np.random.randn(10, 10).astype(np.float32),
-            "adapter_connector.weight": np.random.randn(10, 10).astype(np.float32)
-        }
-    
-    def compute_expert_gradients(self, demo):
-        all_grads = self.compute_gradients(demo)
-        return {
-            "visual": {"vision_encoder.weight": all_grads["vision_encoder.weight"]},
-            "language": {"llm_backbone.attn_q.weight": all_grads["llm_backbone.attn_q.weight"]},
-            "auxiliary": {"adapter_connector.weight": all_grads["adapter_connector.weight"]}
-        }
-    def apply_update(self, grads):
-        pass
-
-def init_client():
+def init_dashboard(provided_client: EdgeClient):
     global client
-    config = ShieldConfig(
-        model_type="Showcase (Pi0)",
-        key_path="demo_key.pem",
-        dp_epsilon=5.0, # Higher budget for demo
-        compression_ratio=32
-    )
-    client = EdgeClient(config)
-    client.set_adapter(ShowcaseAdapter())
-
-# Simulation Loop
-def simulation_loop():
-    global is_running
-    while True:
-        if is_running and client:
-            # Simulate a robot demonstration
-            demo = Demonstration(
-                observations=[np.zeros((224,224,3))],
-                actions=[np.zeros(7)]
-            )
-            # Trigger Federated Learning Step (Encryption Pipeline)
-            # This runs: Gradient -> Clip -> Sparsify -> Compress -> Encrypt
-            client.add_demonstration(demo)
-            client.fit([], {}) # Returns encrypted payload
-            
-            # Sleep to simulate real-time behavior
-            time.sleep(2.0)
-        else:
-            time.sleep(0.5)
+    client = provided_client
 
 # API Handler
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):
@@ -126,23 +75,17 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
-def run_server(port=8000):
-    # Initialize SDK
-    init_client()
-    
-    # Start Simulation Thread
-    sim_thread = threading.Thread(target=simulation_loop, daemon=True)
-    sim_thread.start()
+def run_server(port=8000, client_instance: Optional[EdgeClient] = None):
+    if client_instance:
+        init_dashboard(client_instance)
     
     # Change directory to serve static files correctly
     web_dir = os.path.join(os.path.dirname(__file__), "dashboard")
     os.chdir(web_dir)
     
-    logger.info(f"Starting APHE-Shield Showcase on port {port}")
+    logger.info(f"Starting APHE-Shield Dashboard on port {port}")
     with socketserver.TCPServer(("", port), DashboardHandler) as httpd:
         print(f"Serving at http://localhost:{port}")
-        # Automatically open browser
-        # webbrowser.open(f"http://localhost:{port}")
         httpd.serve_forever()
 
 if __name__ == "__main__":

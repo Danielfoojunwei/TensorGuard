@@ -35,8 +35,9 @@ def main():
         start_server(port=args.port)
         
     elif args.command == "dashboard":
+        from .showcase import run_showcase_dashboard
         print(f"Starting Showcase Dashboard on port {args.port}...")
-        run_dashboard(port=args.port)
+        run_showcase_dashboard(port=args.port)
         
     elif args.command == "client":
         print("Starting Edge Client...")

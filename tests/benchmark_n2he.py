@@ -10,8 +10,8 @@ sys.stdout.reconfigure(line_buffering=True)
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from moai_shield.n2he import N2HEContext, N2HE_128
-from moai_shield.edge_client import N2HEEncryptor
+from aphe_shield.n2he import N2HEContext, N2HE_128
+from aphe_shield.edge_client import N2HEEncryptor
 
 def benchmark():
     print("Initializing N2HE Context (128-bit)...")

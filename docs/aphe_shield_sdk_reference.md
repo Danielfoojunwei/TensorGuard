@@ -7,7 +7,7 @@
 ## Quick Start
 
 ```python
-from moai_shield import EdgeClient, VLAAdapter, ShieldConfig
+from aphe_shield import EdgeClient, VLAAdapter, ShieldConfig
 
 # 1. Configure
 config = ShieldConfig(
@@ -165,7 +165,7 @@ class SubmissionReceipt:
 ### Key Management
 
 ```python
-from moai_shield.security import KeyManager
+from aphe_shield.security import KeyManager
 
 # Generate new key pair (do once, store securely)
 km = KeyManager()
@@ -183,7 +183,7 @@ km.generate_keypair(
 ### Audit Trail
 
 ```python
-from moai_shield.audit import AuditLog
+from aphe_shield.audit import AuditLog
 
 # All operations are logged locally
 log = AuditLog("/var/log/aphe-shield/")
@@ -206,7 +206,7 @@ log.export_csv("/compliance/audit_2025.csv")
 
 ```python
 import rclpy
-from moai_shield.ros2 import ShieldNode
+from aphe_shield.ros2 import ShieldNode
 
 class VLAFineTuningNode(ShieldNode):
     def __init__(self):
@@ -232,7 +232,7 @@ class VLAFineTuningNode(ShieldNode):
 pip install aphe-shield[jetson]
 
 # Verify CUDA acceleration
-python -c "from moai_shield import check_hardware; check_hardware()"
+python -c "from aphe_shield import check_hardware; check_hardware()"
 # Output: ✓ CUDA 12.2 | ✓ TensorRT 8.6 | ✓ 32GB RAM | ✓ N2HE optimized
 ```
 
@@ -252,7 +252,7 @@ python -c "from moai_shield import check_hardware; check_hardware()"
 ## Error Handling
 
 ```python
-from moai_shield.exceptions import (
+from aphe_shield.exceptions import (
     EncryptionError,      # Key or encryption failure
     NetworkError,         # Cloud connectivity issue
     ModelVersionError,    # Version mismatch

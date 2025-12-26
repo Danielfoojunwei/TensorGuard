@@ -113,7 +113,7 @@ APHE-Shield uses a custom implementation of **N2HE (Neural Network Homomorphic E
 ```
 ├── docs/                 # Documentation & Case Studies
 ├── src/
-│   └── moai_shield/
+│   └── aphe_shield/
 │       ├── adapters.py   # VLA Model Adapters (Pi0, OpenVLA, etc.)
 │       ├── cli.py        # Command Line Interface Entry Points
 │       ├── edge_client.py# FL Client & Privacy Pipeline

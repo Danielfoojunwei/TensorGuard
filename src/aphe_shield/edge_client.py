@@ -558,34 +558,3 @@ def create_client(
     return EdgeClient(config)
 
 
-# =============================================================================
-# Main (Demo)
-# =============================================================================
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    
-    # Demo usage
-    config = ShieldConfig(
-        model_type="pi0",
-        key_path="/tmp/test_key.pem",
-        compression_ratio=32,
-    )
-    
-    client = EdgeClient(config)
-    
-    # Set mock adapter
-    client.set_adapter(VLAAdapter._create_mock_adapter())
-    
-    # Create demo demonstration
-    demo = Demonstration(
-        observations=[np.random.rand(224, 224, 3) for _ in range(10)],
-        actions=[np.random.rand(7) for _ in range(10)],
-        task_id="pick_and_place",
-    )
-    
-    # Submit
-    receipt = client.submit_encrypted_update(demo)
-    print(f"Submitted: {receipt.submission_id}")
-    print(f"Encrypted size: {receipt.encrypted_size_bytes} bytes")
-    print(f"Status: {client.get_status()}")

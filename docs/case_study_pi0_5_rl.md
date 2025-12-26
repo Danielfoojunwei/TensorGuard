@@ -74,7 +74,7 @@ class Pi05Wrapper:
 We use the `VLAAdapter` to bridge our custom Pi0.5 wrapper with the APHE-Shield encryption engine.
 
 ```python
-from moai_shield import EdgeClient, VLAAdapter
+from aphe_shield import EdgeClient, VLAAdapter
 
 # 1. Initialize the Pi0.5 Model
 robot_policy = Pi05Wrapper(key_path="/etc/pi0/keys")

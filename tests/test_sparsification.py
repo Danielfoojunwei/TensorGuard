@@ -1,7 +1,7 @@
 
 import numpy as np
 import pytest
-from moai_shield.edge_client import TopKSparsifier
+from aphe_shield.edge_client import TopKSparsifier
 
 def test_top_k_sparsification():
     """Verify Top-K sparsifier zeroes out 99% of values."""

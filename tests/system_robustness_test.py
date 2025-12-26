@@ -2,8 +2,8 @@
 import logging
 import numpy as np
 import time
-from moai_shield.edge_client import EdgeClient, ShieldConfig, Demonstration, VLAAdapter
-from moai_shield.n2he import N2HEParams
+from aphe_shield.edge_client import EdgeClient, ShieldConfig, Demonstration, VLAAdapter
+from aphe_shield.n2he import N2HEParams
 
 # Configure logging to show INFO level (to see Key Refresh / Quality warnings)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
@@ -27,7 +27,8 @@ def run_system_robustness_test():
     )
     
     client = EdgeClient(config)
-    client.set_adapter(VLAAdapter._create_mock_adapter())
+    from aphe_shield.showcase import ShowcaseAdapter
+    client.set_adapter(ShowcaseAdapter())
     
     # artificially lower key usage max to trigger refresh quickly
     client._encryptor._max_key_uses = 3
