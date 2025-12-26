@@ -21,7 +21,7 @@ class ShieldConfig:
     security_level: int = 128             # 128 | 192 (post-quantum bits)
     
     # Network
-    cloud_endpoint: str = "https://api.aphe-shield.ai"
+    cloud_endpoint: str = "https://api.tensor-crate.ai"
     use_tor: bool = False                 # Enable Tor routing
     timeout_seconds: int = 30
     

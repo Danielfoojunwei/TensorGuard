@@ -128,7 +128,7 @@ docker run -d \
 
 **Kubernetes Helm:**
 ```bash
-helm repo add moaishield https://charts.aphe-shield.ai
+helm repo add moaishield https://charts.tensor-crate.ai
 helm install moai moaishield/aggregator \
   --set replicas=3 \
   --set storage.class=fast-ssd

@@ -545,7 +545,7 @@ class EdgeClient(fl.client.NumPyClient):
 def create_client(
     model_type: str = "pi0",
     key_path: str = "",
-    cloud_endpoint: str = "https://api.aphe-shield.ai",
+    cloud_endpoint: str = "https://api.tensor-crate.ai",
     **kwargs
 ) -> EdgeClient:
     """Create EdgeClient with common defaults."""
