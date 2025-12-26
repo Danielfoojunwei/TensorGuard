@@ -1,6 +1,6 @@
 # APHE-Shield SDK Reference
 
-> **Version 0.1.0** | Privacy-Preserving VLA Fine-Tuning
+> **Version 1.1.0** | Privacy-Preserving VLA Fine-Tuning
 
 ---
 
@@ -13,7 +13,7 @@ from moai_shield import EdgeClient, VLAAdapter, ShieldConfig
 config = ShieldConfig(
     model_type="pi0",                    # pi0 | openvla | rt2 | custom
     key_path="/secure/customer.pem",     # Customer-controlled encryption key
-    cloud_endpoint="https://api.aphe-shield.ai",
+    cloud_endpoint="https://api.tensor-crate.ai",
 )
 
 # 2. Initialize
@@ -81,7 +81,7 @@ class ShieldConfig:
     security_level: int = 128         # 128 | 192 (post-quantum bits)
     
     # Network
-    cloud_endpoint: str = "https://api.aphe-shield.ai"
+    cloud_endpoint: str = "https://api.tensor-crate.ai"
     use_tor: bool = False             # Enable Tor routing for high-security
     
     # Performance
