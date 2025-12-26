@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APHE-Shield Control Center</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="brand">
+                <div class="logo-icon">🛡️</div>
+                <h1>APHE-Shield</h1>
+                <div id="simd-badge" class="simd-badge hidden">SIMD Optimized</div>
+            </div>
+            <div class="status-badge" id="connection-status">
+                <span class="dot"></span> <span id="conn-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Card -->
+        <main>
+            <div class="card">
+                <h2>Privacy-Preserving Fine-Tuning</h2>
+                <p class="subtitle">Robot Fleet: <strong>Manufacturing Zone A</strong> (5 Units)</p>
+
+                <!-- Encryption Visualization -->
+                <div class="encryption-viz">
+                    <div class="secure-line">
+                        <div class="icon robot">🤖</div>
+                        <div class="pipeline">
+                            <div class="stage" title="Gradient Clipping">✂️</div>
+                            <div class="arrow">→</div>
+                            <div class="stage" title="Sparsification">📉</div>
+                            <div class="arrow">→</div>
+                            <div class="stage" title="APHE Compression">📦</div>
+                            <div class="arrow">→</div>
+                            <div class="stage lock" title="N2HE Encryption">🔒</div>
+                        </div>
+                        <div class="icon cloud">☁️</div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="label">Encrypted Submissions</span>
+                        <span class="value" id="submission-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Security Level</span>
+                        <span class="value highlight">128-bit PQ</span>
+                    </div>
+                </div>
+
+                <!-- MoI Experts Section -->
+                <div class="experts-section">
+                    <h3>Mixture of Intelligence Experts</h3>
+                    <div class="experts-grid">
+                        <div class="expert-item" id="expert-visual">
+                            <span class="icon">👁️</span>
+                            <span class="name">Visual</span>
+                            <span class="weight" id="weight-visual">1.0x</span>
+                        </div>
+                        <div class="expert-item" id="expert-language">
+                            <span class="icon">📝</span>
+                            <span class="name">Language</span>
+                            <span class="weight" id="weight-language">0.8x</span>
+                        </div>
+                        <div class="expert-item" id="expert-aux">
+                            <span class="icon">🔧</span>
+                            <span class="name">Auxiliary</span>
+                            <span class="weight" id="weight-aux">1.2x</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Budget -->
+                <div class="budget-section">
+                    <div class="budget-header">
+                        <span class="label">Privacy Budget (ε)</span>
+                        <span class="value" id="budget-val">5.00</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="budget-fill" style="width: 100%;"></div>
+                    </div>
+                    <p class="crypto-note">Protected by N2HE Homomorphic Encryption</p>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button id="btn-start" class="btn primary">Start Training</button>
+                    <button id="btn-stop" class="btn secondary" disabled>Stop</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by <strong>APHE</strong> & <strong>N2HE</strong></p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
