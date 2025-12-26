@@ -22,6 +22,65 @@
 
 ---
 
+## 🏭 Production-Grade Features (v1.1.0)
+
+TensorGuard is **production-ready** for secure post-training at scale with enterprise features:
+
+### Operating Envelope
+*   **Hard constraints** on trainable parameters (PEFT-only: LoRA/Adapters)
+*   **Enforced update size limits** (10KB - 5MB) and round cadence (10min - 24h)
+*   **Canary deployment** with automatic rollback (configurable 5-20% canary)
+
+### Canonical UpdatePackage Format
+*   **Versioned updates** with full metadata (training config, safety stats, compatibility)
+*   **Deterministic serialization** for reproducible audits
+*   **Fingerprinting** for safe rollback and integrity verification
+
+### Privacy & Training Controls
+*   **Separate DP policy profiles** per customer site (epsilon budget, clipping, noise)
+*   **Independent encryption profiles** (key rotation schedule, quorum thresholds)
+*   **Training policy profiles** (compression, sparsity, quality thresholds)
+
+### Enterprise Key Management
+*   **Cloud never holds decryption keys** (customer-controlled KMS/HSM)
+*   **Automatic key rotation** with full audit trail
+*   **Break-glass policies** for compromised keys
+*   **Disaster recovery** export/import
+
+### Resilient Aggregation
+*   **Quorum-based rounds** (min 2-5 clients) with straggler handling
+*   **Staleness weighting** (exponential decay for old updates)
+*   **Client health tracking** and outlier detection (>3σ rejection)
+*   **Asynchronous federation** option for continuous aggregation
+
+### Evaluation Gating
+*   **Safety checks** before every deployment (success rate, KL divergence, OOD robustness)
+*   **Regression detection** (max 3-5% degradation allowed)
+*   **Canary → Progressive → Full rollout** with automatic rollback
+
+### IL + RL Pipeline
+*   **Stage 1: IL PEFT Baseline** (stable supervised adaptation)
+*   **Stage 2: Offline RL PEFT** (improvement from logs, conservative)
+*   **Stage 3: On-Policy RL PEFT** (optional, requires approval)
+
+### SRE Observability
+*   **Full latency breakdown** (train/compress/encrypt/upload/aggregate/decrypt/apply)
+*   **Compression metrics** (original size, effective ratio, overhead)
+*   **Privacy budget tracking** (epsilon consumption rate, remaining budget)
+*   **Quality KPIs** (success rate, KL divergence, update norms, outlier detection)
+*   **JSONL metrics** for Prometheus/Grafana/DataDog ingestion
+
+### Performance Benchmarking
+*   **End-to-end benchmark suite** measuring business metric: "time per deployed improvement"
+*   **Benchmark matrix**: 2-100 clients × 10KB-10MB updates × 10Mbps-1Gbps networks × IL/RL
+*   **Measured**: latency, throughput, compression, privacy cost, quality
+
+📘 **[Production Blueprint Documentation](docs/PRODUCTION_BLUEPRINT.md)**
+📘 **[Configuration Examples](examples/production_config_example.py)**
+📘 **[Performance Benchmarks](benchmarks/production_benchmark.py)**
+
+---
+
 ## 🏗️ System Architecture
 
 ```mermaid

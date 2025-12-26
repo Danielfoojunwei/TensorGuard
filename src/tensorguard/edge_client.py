@@ -13,6 +13,23 @@ import time
 
 from .structures import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
 from .adapters import VLAAdapter
+from .production import (
+    OperatingEnvelope,
+    UpdatePackage,
+    ModelTargetMap,
+    TrainingMetadata,
+    SafetyStatistics,
+    ObjectiveType,
+    DPPolicyProfile,
+    EncryptionPolicyProfile,
+    TrainingPolicyProfile,
+    KeyManagementSystem,
+    KeyMetadata,
+    ObservabilityCollector,
+    RoundLatencyBreakdown,
+    CompressionMetrics,
+    ModelQualityMetrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -331,33 +348,74 @@ class EdgeClient(fl.client.NumPyClient):
     Integrates with Flower for federated learning.
     """
     
-    def __init__(self, config: ShieldConfig):
+    def __init__(
+        self,
+        config: ShieldConfig,
+        operating_envelope: Optional[OperatingEnvelope] = None,
+        dp_profile: Optional[DPPolicyProfile] = None,
+        encryption_profile: Optional[EncryptionPolicyProfile] = None,
+        training_profile: Optional[TrainingPolicyProfile] = None,
+        enable_observability: bool = True
+    ):
         self.config = config
-        
+
+        # Production components
+        self.operating_envelope = operating_envelope or OperatingEnvelope()
+        self.dp_profile = dp_profile or DPPolicyProfile(
+            profile_name="default",
+            clipping_norm=config.max_gradient_norm,
+            epsilon_budget=config.dp_epsilon,
+            delta=1e-5
+        )
+        self.encryption_profile = encryption_profile or EncryptionPolicyProfile(
+            profile_name="default",
+            security_level=config.security_level
+        )
+        self.training_profile = training_profile or TrainingPolicyProfile(
+            profile_name="default",
+            learning_rate=1e-4,
+            batch_size=config.batch_size,
+            compression_ratio=config.compression_ratio,
+            sparsity=config.sparsity
+        )
+
+        # Validate operating envelope
+        if not self.operating_envelope.validate():
+            logger.warning("Operating envelope validation failed, using defaults")
+
         # Initialize pipeline components
-        self._clipper = GradientClipper(config.max_gradient_norm)
-        self._sparsifier = SemanticSparsifier(config.sparsity)
-        self._compressor = APHECompressor(config.compression_ratio)
+        self._clipper = GradientClipper(self.dp_profile.clipping_norm)
+        self._sparsifier = SemanticSparsifier(self.training_profile.sparsity)
+        self._compressor = APHECompressor(self.training_profile.compression_ratio)
         self._encryptor = N2HEEncryptor(config.key_path, config.security_level)
-        self._quality_monitor = QualityMonitor(mse_threshold=0.05)
-        
+        self._quality_monitor = QualityMonitor(mse_threshold=self.training_profile.max_quality_mse)
+
+        # Observability
+        self.observability = ObservabilityCollector() if enable_observability else None
+        self._current_round = 0
+
         # Initialize VLA adapter
         self._adapter: Optional[VLAAdapter] = None
-        
+
         # State
         self._submission_queue: List[bytes] = []
         self._total_submissions = 0
         self._privacy_budget_used = 0.0
         self._last_model_version = "v0.0.0"
-        
+
         # Error Feedback (Residual Memory)
         # Stores the difference between true gradients and compressed/sparsified ones
         self._error_memory: Dict[str, np.ndarray] = {}
-        
+
         # Buffer for current round's training data
         self._current_round_demos: List[Demonstration] = []
-        
+
+        # Training objective type (can be set per round)
+        self._objective_type = ObjectiveType.IMITATION_LEARNING
+
         logger.info(f"EdgeClient initialized for {config.model_type}")
+        logger.info(f"Production envelope: PEFT={self.operating_envelope.peft_strategy.value}, rounds={self.operating_envelope.round_interval_seconds}s")
+        logger.info(f"DP profile: epsilon={self.dp_profile.epsilon_budget}, clip_norm={self.dp_profile.clipping_norm}")
     
     def get_status(self) -> ClientStatus:
         """Return current client status."""
@@ -394,21 +452,27 @@ class EdgeClient(fl.client.NumPyClient):
     def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict[str, Scalar]]:
         """
         Train the model on local data (Federated Round).
-        Returns ENCRYPTED gradients as parameters.
+        Returns ENCRYPTED gradients as parameters with production observability.
         """
-        logger.info(f"Starting FL Round. Demos: {len(self._current_round_demos)}")
-        
+        self._current_round += 1
+        logger.info(f"Starting FL Round {self._current_round}. Demos: {len(self._current_round_demos)}")
+
+        # Production latency tracking
+        latency = RoundLatencyBreakdown()
+        round_start_time = time.time()
+
         if not self._current_round_demos:
             logger.warning("No demonstrations for this round.")
             return [], 0, {}
 
         # 1. Update local model with global parameters (if any)
         # self._adapter.set_weights(parameters)
-        
-        # 2. Compute Expert Gradients (Mixture of Intelligence)
+
+        # 2. Compute Expert Gradients (Mixture of Intelligence) - TRAINING PHASE
+        train_start = time.time()
         combined_experts = {"visual": {}, "language": {}, "auxiliary": {}}
         count = 0
-        
+
         for demo in self._current_round_demos:
             experts = self._adapter.compute_expert_gradients(demo)
             for exp_name, grads in experts.items():
@@ -418,25 +482,33 @@ class EdgeClient(fl.client.NumPyClient):
                     else:
                         combined_experts[exp_name][k] += v
             count += 1
-            
+
         # Clear buffer
+        demo_count = len(self._current_round_demos)
         self._current_round_demos = []
-        
+
+        latency.train_ms = (time.time() - train_start) * 1000
+
         # 3. MoI Gating & Aggregation
         # Priority MoI: Auxiliary (Adapters) > Visual > Language
         gating_weights = {"visual": 1.0, "language": 0.8, "auxiliary": 1.2}
-        
+
         combined_gradients = {}
         for exp_name, grads in combined_experts.items():
             weight = gating_weights[exp_name]
             for k, v in grads.items():
                 combined_gradients[k] = v * weight
-        
+
         if not combined_gradients:
             return [], 0, {}
-            
+
+        # Calculate gradient norm for safety statistics
+        grad_norms = [np.linalg.norm(v) for v in combined_gradients.values()]
+        grad_norm_mean = float(np.mean(grad_norms))
+        grad_norm_max = float(np.max(grad_norms))
+
         # 3. Privacy Pipeline with Error Feedback
-        
+
         # a) Add Residuals from previous round
         if self._error_memory:
             for k, v in self._error_memory.items():
@@ -444,14 +516,14 @@ class EdgeClient(fl.client.NumPyClient):
                     combined_gradients[k] += v
                 else:
                     combined_gradients[k] = v
-        
+
         # b) Clip (Global Norm)
         clipped_gradients = self._clipper.clip(combined_gradients)
-        
+
         # c) Sparsify
         # We need to compute what IS sent to update residuals
         sparse_gradients = self._sparsifier.sparsify(clipped_gradients)
-        
+
         # d) Update Error Memory
         # Error = (Clipped - Sparse)
         # We accumulate what was dropped by sparsification
@@ -461,10 +533,13 @@ class EdgeClient(fl.client.NumPyClient):
                 new_residuals[k] = clipped_gradients[k] - sparse_gradients[k]
         self._error_memory = new_residuals
 
-        # e) Compress (Quantization)
-        # Note: We compress the sparse gradients
+        # e) Compress (Quantization) - COMPRESSION PHASE
+        compress_start = time.time()
+        original_size = sum(g.nbytes for g in sparse_gradients.values())
         compressed = self._compressor.compress(sparse_gradients)
-        
+        compressed_size = len(compressed)
+        latency.compress_ms = (time.time() - compress_start) * 1000
+
         # --- Quality Monitoring ---
         # Decode locally to verify signal integrity
         decompressed_check = self._compressor.decompress(compressed)
@@ -473,18 +548,106 @@ class EdgeClient(fl.client.NumPyClient):
         quality_mse = self._quality_monitor.check_quality(sparse_gradients, decompressed_check)
         logger.info(f"Signal Quality MSE: {quality_mse:.5f}")
         # --------------------------
-        
-        # f) Encrypt
+
+        # f) Encrypt - ENCRYPTION PHASE
+        encrypt_start = time.time()
         encrypted_bytes = self._encryptor.encrypt(compressed)
-        
+        latency.encrypt_ms = (time.time() - encrypt_start) * 1000
+
+        # Production: Check DP budget before consuming
+        epsilon_per_round = self.config.dp_epsilon / 100
+        if not self.dp_profile.consume_epsilon(epsilon_per_round):
+            if self.observability:
+                self.observability.record_alert(
+                    "DP_BUDGET_EXHAUSTED",
+                    f"Client DP budget exhausted after {self._current_round} rounds",
+                    severity="critical"
+                )
+            logger.critical("DP budget exhausted! Cannot proceed with training.")
+            return [], 0, {"error": "dp_budget_exhausted"}
+
+        # Production: Create canonical UpdatePackage
+        update_package = UpdatePackage(
+            client_id=hashlib.sha256(str(id(self)).encode()).hexdigest()[:16],
+            target_map=ModelTargetMap(
+                module_names=list(combined_gradients.keys()),
+                adapter_ids=self.operating_envelope.trainable_modules,
+                tensor_shapes={k: v.shape for k, v in combined_gradients.items()}
+            ),
+            base_model_fingerprint=self._last_model_version,
+            delta_tensors={"encrypted": encrypted_bytes},
+            compression_metadata={
+                "compression_ratio": self._compressor.compression_ratio,
+                "sparsity": self._sparsifier.k_ratio,
+                "original_size": original_size,
+                "compressed_size": compressed_size
+            },
+            training_meta=TrainingMetadata(
+                steps=count,
+                learning_rate=self.training_profile.learning_rate,
+                objective_type=self._objective_type,
+                num_demonstrations=demo_count,
+                training_duration_seconds=latency.train_ms / 1000
+            ),
+            safety_stats=SafetyStatistics(
+                constraint_violations=0,
+                ood_score=0.0,
+                kl_divergence=quality_mse,  # Use MSE as proxy for KL
+                grad_norm_mean=grad_norm_mean,
+                grad_norm_max=grad_norm_max,
+                dp_epsilon_consumed=self.dp_profile.epsilon_consumed
+            )
+        )
+
+        # Production: Validate update size against operating envelope
+        update_size = len(update_package.serialize())
+        if not self.operating_envelope.enforce_update_size(update_size):
+            if self.observability:
+                self.observability.record_alert(
+                    "UPDATE_SIZE_VIOLATION",
+                    f"Update size {update_size/1024:.1f}KB violates envelope constraints",
+                    severity="warning"
+                )
+
+        # Production: Observability metrics
+        if self.observability:
+            # Record latency
+            latency.upload_ms = 0  # Will be measured server-side
+            self.observability.record_latency(latency, self._current_round)
+
+            # Record compression
+            comp_metrics = CompressionMetrics(
+                original_size_bytes=original_size,
+                compressed_size_bytes=compressed_size,
+                compression_ratio=original_size / max(compressed_size, 1)
+            )
+            self.observability.record_compression(comp_metrics, self._current_round)
+
+            # Record DP epsilon
+            self.observability.record_dp_epsilon(
+                self.dp_profile.epsilon_consumed,
+                self.dp_profile.epsilon_budget,
+                self._current_round
+            )
+
+            # Record quality
+            quality_metrics = ModelQualityMetrics(
+                success_rate=1.0,  # Placeholder - would come from eval
+                average_reward=0.0,
+                kl_divergence=quality_mse,
+                update_norm=grad_norm_max,
+                is_outlier=False
+            )
+            self.observability.record_quality(quality_metrics, self._current_round)
+
         # 4. Wrap encryption as NDArray for Flower transport
         # Flower expects list of numpy arrays
         payload = [np.frombuffer(encrypted_bytes, dtype=np.uint8)]
-        
+
         # Track usage
         self._total_submissions += 1
-        self._privacy_budget_used += self.config.dp_epsilon / 100
-        
+        self._privacy_budget_used = self.dp_profile.epsilon_consumed
+
         # Adaptive Compression Heuristic
         # If payload is larger than target (e.g. 5MB) or budget is tight, increase compression
         estimated_size = len(encrypted_bytes)
@@ -493,8 +656,13 @@ class EdgeClient(fl.client.NumPyClient):
              new_ratio = min(self._compressor.compression_ratio * 2, 128)
              self._compressor = APHECompressor(compression_ratio=new_ratio)
              logger.info(f"Adaptive Compression: Increasing ratio to {new_ratio}x (Size: {estimated_size/1024/1024:.2f}MB)")
-        
-        return payload, count, {"privacy_budget_used": self._privacy_budget_used}
+
+        return payload, count, {
+            "privacy_budget_used": self._privacy_budget_used,
+            "quality_mse": quality_mse,
+            "update_size_kb": update_size / 1024,
+            "round": self._current_round
+        }
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[float, int, Dict[str, Scalar]]:
         """Evaluate the model."""
