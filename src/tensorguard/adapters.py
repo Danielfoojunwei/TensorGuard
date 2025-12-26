@@ -1,5 +1,5 @@
 """
-APHE-Shield VLA Adapters
+TensorGuard VLA Adapters
 """
 
 import logging

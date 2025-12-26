@@ -1,5 +1,5 @@
 """
-APHE-Shield CLI
+TensorGuard CLI
 Unified entry point for Server, Dashboard, and Tools.
 """
 
@@ -11,7 +11,7 @@ from .dashboard_server import run_server as run_dashboard
 from .edge_client import create_client, ShieldConfig
 
 def main():
-    parser = argparse.ArgumentParser(description="APHE-Shield Command Line Interface")
+    parser = argparse.ArgumentParser(description="TensorGuard Command Line Interface")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
     # helper: start-server

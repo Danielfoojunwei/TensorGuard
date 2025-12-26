@@ -1,4 +1,4 @@
-# APHE-Shield SDK Reference
+# TensorGuard SDK Reference
 
 > **Version 1.1.0** | Privacy-Preserving VLA Fine-Tuning
 
@@ -7,13 +7,13 @@
 ## Quick Start
 
 ```python
-from aphe_shield import EdgeClient, VLAAdapter, ShieldConfig
+from tensorguard import EdgeClient, VLAAdapter, ShieldConfig
 
 # 1. Configure
 config = ShieldConfig(
     model_type="pi0",                    # pi0 | openvla | rt2 | custom
     key_path="/secure/customer.pem",     # Customer-controlled encryption key
-    cloud_endpoint="https://api.tensor-crate.ai",
+    cloud_endpoint="https://api.TensorGuard.ai",
 )
 
 # 2. Initialize
@@ -81,7 +81,7 @@ class ShieldConfig:
     security_level: int = 128         # 128 | 192 (post-quantum bits)
     
     # Network
-    cloud_endpoint: str = "https://api.tensor-crate.ai"
+    cloud_endpoint: str = "https://api.TensorGuard.ai"
     use_tor: bool = False             # Enable Tor routing for high-security
     
     # Performance
@@ -165,7 +165,7 @@ class SubmissionReceipt:
 ### Key Management
 
 ```python
-from aphe_shield.security import KeyManager
+from tensorguard.security import KeyManager
 
 # Generate new key pair (do once, store securely)
 km = KeyManager()
@@ -183,10 +183,10 @@ km.generate_keypair(
 ### Audit Trail
 
 ```python
-from aphe_shield.audit import AuditLog
+from tensorguard.audit import AuditLog
 
 # All operations are logged locally
-log = AuditLog("/var/log/aphe-shield/")
+log = AuditLog("/var/log/TensorGuard/")
 
 # Query audit trail
 entries = log.query(
@@ -206,7 +206,7 @@ log.export_csv("/compliance/audit_2025.csv")
 
 ```python
 import rclpy
-from aphe_shield.ros2 import ShieldNode
+from tensorguard.ros2 import ShieldNode
 
 class VLAFineTuningNode(ShieldNode):
     def __init__(self):
@@ -229,10 +229,10 @@ class VLAFineTuningNode(ShieldNode):
 
 ```bash
 # Install on Jetson Orin
-pip install aphe-shield[jetson]
+pip install TensorGuard[jetson]
 
 # Verify CUDA acceleration
-python -c "from aphe_shield import check_hardware; check_hardware()"
+python -c "from tensorguard import check_hardware; check_hardware()"
 # Output: ✓ CUDA 12.2 | ✓ TensorRT 8.6 | ✓ 32GB RAM | ✓ N2HE optimized
 ```
 
@@ -252,7 +252,7 @@ python -c "from aphe_shield import check_hardware; check_hardware()"
 ## Error Handling
 
 ```python
-from aphe_shield.exceptions import (
+from tensorguard.exceptions import (
     EncryptionError,      # Key or encryption failure
     NetworkError,         # Cloud connectivity issue
     ModelVersionError,    # Version mismatch

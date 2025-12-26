@@ -1,7 +1,7 @@
 """
 N2HE: Neural Network Homomorphic Encryption Library
 
-Integrated into APHE-Shield for privacy-preserving VLA fine-tuning.
+Integrated into TensorGuard for privacy-preserving VLA fine-tuning.
 
 Based on HintSight Technology's N2HE-hexl library.
 Reference: https://github.com/HintSight-Technology/N2HE-hexl

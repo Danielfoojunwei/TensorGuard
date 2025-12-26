@@ -2,8 +2,8 @@
 import logging
 import numpy as np
 import time
-from aphe_shield.edge_client import EdgeClient, ShieldConfig, Demonstration, VLAAdapter
-from aphe_shield.n2he import N2HEParams
+from tensorguard.edge_client import EdgeClient, ShieldConfig, Demonstration, VLAAdapter
+from tensorguard.n2he import N2HEParams
 
 # Configure logging to show INFO level (to see Key Refresh / Quality warnings)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
@@ -11,7 +11,7 @@ logger = logging.getLogger("RobustnessTest")
 
 def run_system_robustness_test():
     print("\n==================================================")
-    print("APHE-Shield System Robustness & Graceful Handling Test")
+    print("TensorGuard System Robustness & Graceful Handling Test")
     print("==================================================\n")
     
     # 1. Initialize Client with Aggressive Settings to trigger events
@@ -27,7 +27,7 @@ def run_system_robustness_test():
     )
     
     client = EdgeClient(config)
-    from aphe_shield.showcase import ShowcaseAdapter
+    from tensorguard.showcase import ShowcaseAdapter
     client.set_adapter(ShowcaseAdapter())
     
     # artificially lower key usage max to trigger refresh quickly

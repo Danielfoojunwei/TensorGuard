@@ -1,5 +1,5 @@
 """
-APHE-Shield Edge Client - Core Implementation
+TensorGuard Edge Client - Core Implementation
 Privacy-Preserving VLA Fine-Tuning for Humanoid Robotics
 """
 
@@ -327,7 +327,7 @@ except ImportError:
 
 class EdgeClient(fl.client.NumPyClient):
     """
-    Main client for APHE-Shield edge deployment.
+    Main client for TensorGuard edge deployment.
     Integrates with Flower for federated learning.
     """
     
@@ -383,7 +383,7 @@ class EdgeClient(fl.client.NumPyClient):
     def get_parameters(self, config: Dict[str, Scalar]) -> NDArrays:
         """
         Return the current local model parameters.
-        For APHE-Shield, we start with the base model, but typically 
+        For TensorGuard, we start with the base model, but typically 
         we return empty or initial weights if needed.
         """
         # In a real scenario, we might return the current VLA weights
@@ -545,7 +545,7 @@ class EdgeClient(fl.client.NumPyClient):
 def create_client(
     model_type: str = "pi0",
     key_path: str = "",
-    cloud_endpoint: str = "https://api.tensor-crate.ai",
+    cloud_endpoint: str = "https://api.TensorGuard.ai",
     **kwargs
 ) -> EdgeClient:
     """Create EdgeClient with common defaults."""

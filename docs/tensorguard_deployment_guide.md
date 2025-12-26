@@ -1,4 +1,4 @@
-# APHE-Shield Deployment Guide
+# TensorGuard Deployment Guide
 
 > Deployment scenarios for System Integrators
 
@@ -50,7 +50,7 @@ config = ShieldConfig(
 config = ShieldConfig(
     model_type="openvla",
     key_path="/etc/moai/keys/amazon_fc.pem",
-    cloud_endpoint="https://api.aphe-shield.ai",
+    cloud_endpoint="https://api.TensorGuard.ai",
     compression_ratio=64,                 # Higher compression for scale
 )
 ```
@@ -75,7 +75,7 @@ config = ShieldConfig(
 config = ShieldConfig(
     model_type="custom",
     key_path="/secure/hipaa_key.pem",
-    cloud_endpoint="https://healthcare.aphe-shield.ai",
+    cloud_endpoint="https://healthcare.TensorGuard.ai",
     use_tor=True,                         # Maximum anonymity
     dp_epsilon=0.5,                       # Stricter privacy
 )
@@ -98,16 +98,16 @@ config = ShieldConfig(
 
 ```bash
 # Standard installation
-pip install aphe-shield
+pip install TensorGuard
 
 # With Jetson optimizations
-pip install aphe-shield[jetson]
+pip install TensorGuard[jetson]
 
 # With ROS2 integration
-pip install aphe-shield[ros2]
+pip install TensorGuard[ros2]
 
 # Full enterprise (HSM, Tor, audit)
-pip install aphe-shield[enterprise]
+pip install TensorGuard[enterprise]
 ```
 
 ---
@@ -128,7 +128,7 @@ docker run -d \
 
 **Kubernetes Helm:**
 ```bash
-helm repo add moaishield https://charts.tensor-crate.ai
+helm repo add moaishield https://charts.TensorGuard.ai
 helm install moai moaishield/aggregator \
   --set replicas=3 \
   --set storage.class=fast-ssd

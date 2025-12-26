@@ -1,5 +1,5 @@
 """
-APHE-Shield: Privacy-Preserving VLA Fine-Tuning for Humanoid Robotics
+TensorGuard: Privacy-Preserving VLA Fine-Tuning for Humanoid Robotics
 
 Plug-and-play SDK for Robotics System Integrators to fine-tune
 Vision-Language-Action models without exposing proprietary data.

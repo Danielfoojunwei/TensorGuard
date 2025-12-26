@@ -1,7 +1,7 @@
-# APHE-Shield: Privacy-Preserving VLA Fine-Tuning
+# TensorGuard: Privacy-Preserving VLA Fine-Tuning
 > **Production Ready (v1.1.0)** | **128-bit Post-Quantum Security** | **Research-Optimized**
 
-**APHE-Shield** is a plug-and-play SDK that enables Robotics System Integrators to fine-tune Vision-Language-Action (VLA) models on humanoid robots deployed in secure customer facilities—**without ever exposing proprietary location data, operational workflows, or sensitive demonstrations to the cloud.**
+**TensorGuard** is a plug-and-play SDK that enables Robotics System Integrators to fine-tune Vision-Language-Action (VLA) models on humanoid robots deployed in secure customer facilities—**without ever exposing proprietary location data, operational workflows, or sensitive demonstrations to the cloud.**
 
 ---
 
@@ -49,8 +49,8 @@ graph TD
 
 ```bash
 # Clone the repository
-git clone https://github.com/tensor-crate/tensor-crate.git
-cd tensor-crate
+git clone https://github.com/TensorGuard/TensorGuard.git
+cd TensorGuard
 
 # Install dependencies
 pip install -e .
@@ -65,7 +65,7 @@ Start the central server that will coordinate the Federated Learning rounds.
 
 ```bash
 # Run the server (default: localhost:8080)
-aphe-shield server --rounds 3
+TensorGuard server --rounds 3
 ```
 
 ### 2. Start the Showcase Dashboard
@@ -73,7 +73,7 @@ Launch the web interface to visualize the training process.
 
 ```bash
 # Start the dashboard server (default: localhost:8000)
-aphe-shield dashboard
+TensorGuard dashboard
 ```
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
@@ -82,7 +82,7 @@ Simulate a robot connecting to the server and submitting encrypted updates.
 
 ```bash
 # Run a client with a mock VLA adapter
-aphe-shield client --client-id robot-01
+TensorGuard client --client-id robot-01
 ```
 
 ---
@@ -91,8 +91,8 @@ aphe-shield client --client-id robot-01
 
 Detailed documentation is available in the `docs/` directory:
 
-*   **[Deployment Guide](docs/aphe_shield_deployment_guide.md)**: Architecture topologies for air-gapped and networked factories.
-*   **[SDK Reference](docs/aphe_shield_sdk_reference.md)**: API documentation for `EdgeClient`, `VLAAdapter`, and `N2HEEncryptor`.
+*   **[Deployment Guide](docs/tensorguard_deployment_guide.md)**: Architecture topologies for air-gapped and networked factories.
+*   **[SDK Reference](docs/tensorguard_sdk_reference.md)**: API documentation for `EdgeClient`, `VLAAdapter`, and `N2HEEncryptor`.
 *   **[Case Study: Pi0.5 + RL](docs/case_study_pi0_5_rl.md)**: A step-by-step guide to fine-tuning a Pi0.5 VLA using Reinforcement Learning.
 
 ---
@@ -100,7 +100,7 @@ Detailed documentation is available in the `docs/` directory:
 ## 🔧 Technical Details
 
 ### N2HE Encryption Engine
-APHE-Shield uses a custom implementation of **N2HE (Neural Network Homomorphic Encryption)** based on the LWE (Learning With Errors) hardness assumption.
+TensorGuard uses a custom implementation of **N2HE (Neural Network Homomorphic Encryption)** based on the LWE (Learning With Errors) hardness assumption.
 
 *   **Security Level**: 128-bit Post-Quantum.
 *   **Optimization**: 
@@ -113,7 +113,7 @@ APHE-Shield uses a custom implementation of **N2HE (Neural Network Homomorphic E
 ```
 ├── docs/                 # Documentation & Case Studies
 ├── src/
-│   └── aphe_shield/
+│   └── tensorguard/
 │       ├── adapters.py   # VLA Model Adapters (Pi0, OpenVLA, etc.)
 │       ├── cli.py        # Command Line Interface Entry Points
 │       ├── edge_client.py# FL Client & Privacy Pipeline

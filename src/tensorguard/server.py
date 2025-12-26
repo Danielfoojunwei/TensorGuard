@@ -1,5 +1,5 @@
 """
-APHE-Shield Aggregation Server
+TensorGuard Aggregation Server
 Implements Homomorphic Aggregation using Flower (flwr)
 """
 
@@ -118,7 +118,7 @@ class APHEStrategy(fl.server.strategy.FedAvg):
         return aggregated_parameters, {}
 
 def start_server(port: int = 8080):
-    """Start the APHE-Shield Aggregation Server."""
+    """Start the TensorGuard Aggregation Server."""
     strategy = APHEStrategy()
     
     fl.server.start_server(

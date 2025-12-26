@@ -1,6 +1,6 @@
-# Case Study: Fine-Tuning Pi0.5 VLA with Reinforcement Learning and APHE-Shield
+# Case Study: Fine-Tuning Pi0.5 VLA with Reinforcement Learning and TensorGuard
 
-This case study demonstrates how to securely fine-tune a **Pi0.5 VLA (Vision-Language-Action)** model using **Reinforcement Learning (RL)** on a fleet of robots, protecting proprietary facility data using APHE-Shield.
+This case study demonstrates how to securely fine-tune a **Pi0.5 VLA (Vision-Language-Action)** model using **Reinforcement Learning (RL)** on a fleet of robots, protecting proprietary facility data using TensorGuard.
 
 ## Scenario
 *   **Robot**: Humanoid Robot (e.g., Unitree H1 or similar) equipped with Pi0.5 VLA.
@@ -12,11 +12,11 @@ This case study demonstrates how to securely fine-tune a **Pi0.5 VLA (Vision-Lan
 
 ## Step 1: Environment Setup & Prerequisites
 
-Ensure the robot has the APHE-Shield Edge SDK installed and access to the Pi0.5 model weights.
+Ensure the robot has the TensorGuard Edge SDK installed and access to the Pi0.5 model weights.
 
 ```python
 # Install SDK
-# pip install aphe-shield[edge] torch numpy
+# pip install TensorGuard[edge] torch numpy
 ```
 
 ### The Pi0.5 Wrapper
@@ -57,7 +57,7 @@ class Pi05Wrapper:
         return grads
         
     def apply_update(self, global_grads: Dict[str, np.ndarray]):
-        """Apply aggregated gradients from APHE-Shield."""
+        """Apply aggregated gradients from TensorGuard."""
         with torch.no_grad():
             for name, param in self.model.named_parameters():
                 if name in global_grads:
@@ -69,12 +69,12 @@ class Pi05Wrapper:
 
 ---
 
-## Step 2: APHE-Shield Integration
+## Step 2: TensorGuard Integration
 
-We use the `VLAAdapter` to bridge our custom Pi0.5 wrapper with the APHE-Shield encryption engine.
+We use the `VLAAdapter` to bridge our custom Pi0.5 wrapper with the TensorGuard encryption engine.
 
 ```python
-from aphe_shield import EdgeClient, VLAAdapter
+from tensorguard import EdgeClient, VLAAdapter
 
 # 1. Initialize the Pi0.5 Model
 robot_policy = Pi05Wrapper(key_path="/etc/pi0/keys")
@@ -92,7 +92,7 @@ adapter = VLAAdapter.from_custom(
 client = EdgeClient(
     adapter=adapter,
     encryption_key_path="/secure/customer_keys/n2he_secret.pem",
-    aggregation_endpoint="grpcs://aggregator.aphe-shield.com:443",
+    aggregation_endpoint="grpcs://aggregator.TensorGuard.com:443",
     security_level=128
 )
 ```
@@ -101,7 +101,7 @@ client = EdgeClient(
 
 ## Step 3: The Privacy-Preserving RL Loop
 
-This is the core training execution. Instead of aggregating gradients on a plain-text parameter server (standard RL), we run the standardized RL collection loop but route the updates through APHE-Shield.
+This is the core training execution. Instead of aggregating gradients on a plain-text parameter server (standard RL), we run the standardized RL collection loop but route the updates through TensorGuard.
 
 ```python
 def run_rl_training_cycle(num_episodes=100):
@@ -127,7 +127,7 @@ def run_rl_training_cycle(num_episodes=100):
             # 'batch' contains sensitive images of the facility
             batch = aggregate_trajectories(trajectories)
             
-            # 2. Submit via APHE-Shield
+            # 2. Submit via TensorGuard
             # - Gradients are Clipped (Differential Privacy)
             # - Gradients are N2HE Encrypted (Homomorphic Encryption)
             # - Encrypted blob is sent to Aggregator
@@ -163,9 +163,9 @@ def aggregate_trajectories(trajs):
 
 To ensure the system is working as intended:
 
-1.  **Check Traffic**: Use `tcpdump` to verify that all outgoing traffic to `aggregator.aphe-shield.com` is high-entropy (encrypted). You should see no plaintext JSON or image data.
+1.  **Check Traffic**: Use `tcpdump` to verify that all outgoing traffic to `aggregator.TensorGuard.com` is high-entropy (encrypted). You should see no plaintext JSON or image data.
 2.  **Verify Keys**: Ensure the `n2he_secret.pem` is present ONLY on the robot/local gateway and NEVER transmitted.
-3.  **Monitor Dashboard**: Use the APHE-Shield Integrator Dashboard to track "Encrypted Updates Received" without seeing the actual updates.
+3.  **Monitor Dashboard**: Use the TensorGuard Integrator Dashboard to track "Encrypted Updates Received" without seeing the actual updates.
 
 ## Architecture View
 
@@ -195,4 +195,4 @@ sequenceDiagram
 
 ## Conclusion
 
-By wrapping the Pi0.5 RL loop with APHE-Shield, the System Integrator enables the robot to learn from its specific environment (improving stacking efficiency) while mathematically guaranteeing that no video feeds or proprietary layouts are ever exposed to the cloud or third parties.
+By wrapping the Pi0.5 RL loop with TensorGuard, the System Integrator enables the robot to learn from its specific environment (improving stacking efficiency) while mathematically guaranteeing that no video feeds or proprietary layouts are ever exposed to the cloud or third parties.

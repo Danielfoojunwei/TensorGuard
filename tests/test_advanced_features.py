@@ -1,7 +1,7 @@
 
 import logging
 import numpy as np
-from aphe_shield.edge_client import QualityMonitor, N2HEEncryptor, EdgeClient, create_client
+from tensorguard.edge_client import QualityMonitor, N2HEEncryptor, EdgeClient, create_client
 
 def test_quality_monitor():
     print("\n--- Testing Quality Monitor ---")

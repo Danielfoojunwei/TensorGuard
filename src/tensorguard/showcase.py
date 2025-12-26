@@ -1,5 +1,5 @@
 """
-APHE-Shield Showcase & Simulation Utilities
+TensorGuard Showcase & Simulation Utilities
 """
 
 import time
@@ -10,7 +10,7 @@ from .edge_client import EdgeClient, ShieldConfig
 from .adapters import VLAAdapter
 from .structures import Demonstration
 
-logger = logging.getLogger("aphe_shield.showcase")
+logger = logging.getLogger("tensorguard.showcase")
 
 class ShowcaseAdapter(VLAAdapter):
     """Mock adapter for dashboard visualization."""

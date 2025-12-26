@@ -1,5 +1,5 @@
 """
-APHE-Shield Data Types
+TensorGuard Data Types
 """
 
 import numpy as np
@@ -10,7 +10,7 @@ import time
 
 @dataclass
 class ShieldConfig:
-    """Configuration for APHE-Shield edge client."""
+    """Configuration for TensorGuard edge client."""
     
     # Model Configuration
     model_type: str = "pi0"               # pi0 | openvla | rt2 | custom
@@ -21,7 +21,7 @@ class ShieldConfig:
     security_level: int = 128             # 128 | 192 (post-quantum bits)
     
     # Network
-    cloud_endpoint: str = "https://api.tensor-crate.ai"
+    cloud_endpoint: str = "https://api.TensorGuard.ai"
     use_tor: bool = False                 # Enable Tor routing
     timeout_seconds: int = 30
     

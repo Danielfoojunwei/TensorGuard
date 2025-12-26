@@ -6,7 +6,7 @@ import time
 
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from aphe_shield.n2he import N2HEContext, N2HE_128
+from tensorguard.n2he import N2HEContext, N2HE_128
 
 def sanity():
     print("Starting sanity check...")

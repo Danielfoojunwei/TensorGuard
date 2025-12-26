@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import webbrowser
 from typing import Optional
-from aphe_shield import EdgeClient, ShieldConfig, VLAAdapter, Demonstration, create_client
+from tensorguard import EdgeClient, ShieldConfig, VLAAdapter, Demonstration, create_client
 import numpy as np
 import logging
 
@@ -83,7 +83,7 @@ def run_server(port=8000, client_instance: Optional[EdgeClient] = None):
     web_dir = os.path.join(os.path.dirname(__file__), "dashboard")
     os.chdir(web_dir)
     
-    logger.info(f"Starting APHE-Shield Dashboard on port {port}")
+    logger.info(f"Starting TensorGuard Dashboard on port {port}")
     with socketserver.TCPServer(("", port), DashboardHandler) as httpd:
         print(f"Serving at http://localhost:{port}")
         httpd.serve_forever()
