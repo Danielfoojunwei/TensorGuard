@@ -49,8 +49,8 @@ graph TD
 
 ```bash
 # Clone the repository
-git clone https://github.com/aphe-shield/aphe-shield.git
-cd aphe-shield
+git clone https://github.com/tensor-crate/tensor-crate.git
+cd tensor-crate
 
 # Install dependencies
 pip install -e .
