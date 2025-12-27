@@ -406,13 +406,13 @@ Physical Intelligence. (2024). π₀: A vision-language-action model for general
 ## 📜 13. License & Attribution
 
 TensorGuard is developed in partnership with:
-- **DTC @ NTU** (Design Technology Centre, Nanyang Technological University)
-- **HintSight Technology** (N2HE-hexl homomorphic encryption library)
+- **DTC @ NTU** (Digital Trust Centre, Nanyang Technological University)
+- **HintSight Technology** (N2HE-hexl homomorphic encryption library; visit https://www.hintsight.com)
 - **Flower Labs** (Federated Learning Framework)
 
 Licensed under **Apache 2.0**. See `LICENSE` for full terms.
 
 ---
 
-© 2025 TensorGuard Team. Production Ready for Secure Post-Training at Scale.
+© 2025 TensorGuard by Daniel Foo Jun Wei. Production Ready for Secure Post-Training at Scale.
 
