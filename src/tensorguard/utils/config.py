@@ -30,6 +30,6 @@ class TensorGuardSettings(BaseSettings):
     DASHBOARD_PORT: int = 8000
 
     # Paths
-    KEY_PATH: str = "keys/node_key.pem"
+    KEY_PATH: str = "keys/enterprise_key.npy"
 
 settings = TensorGuardSettings()
