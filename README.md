@@ -1,5 +1,5 @@
-# TensorGuard SDK v1.3.0
-### Privacy-Preserving VLA Fine-Tuning for Humanoid Robotics
+# TensorGuard SDK v1.4.0
+### Privacy-Preserved VLA Fine-Tuning for Humanoid Robotics
 
 
 [![Python](https://img.shields.io/badge/Python-3.10+-green)](https://python.org)
@@ -288,40 +288,32 @@ We measured the strict cost of security during a live 5-robot federation round.
 
 ---
 
-## 🎮 7. Dashboard User Flow: Control Center
+## 🎮 7. Enterprise Dashboard & Observability
 
-The TensorGuard Control Center provides a real-time command interface for your robotic fleet. Access it via the CLI:
+The TensorGuard v1.4.0 Control Center is a multi-view enterprise portal designed for fleet-wide transparency and remote policy guardrail management.
+
+### Key Functional Views
+
+1.  **📊 Overview (Fleet Telemetry)**: Real-time monitoring of "Encrypted Submissions", bandwidth savings, and round-trip latencies (Train/Compress/Encrypt). It also visualizes the **Mixture of Intelligence (MoI)** expert weighting.
+2.  **⚙️ Control & Settings**: Live tuning of robotic fleet policies:
+    *   **LoRA Rank**: Adjust training capacity vs. memory efficiency (Rank 8-32).
+    *   **Privacy Epsilon (ε)**: Global privacy budget management.
+    *   **Grad Sparsity**: Control bandwidth by tuning top-K gradient selection %.
+3.  **📈 Usage Analytics**: Historical trends with aggregated bandwidth and success rate metrics.
+4.  **📜 Version Control**: Model provenance tracking with an audit trail of every deployed model iteration.
+
+### Interactive User Flow
+
+1.  **Bootstrap Security**: Click **"Rotate Key"** in the Security card to generate a fresh 128-bit N2HE enterprise key. Status must show `READY`.
+2.  **Verify Heartbeat**: Ensure the **"Secure Link"** in the header is green, indicating active gRPC connectivity.
+3.  **Deploy Policy**: Navigate to **Settings** to adjust LoRA rank or Sparsity targets based on your current network environment (e.g., Satellite vs. 5G).
+4.  **Monitor Intelligence**: In the **Overview**, observe how the **Visual** and **Language** experts are prioritized during the current fine-tuning round.
+5.  **Audit Governance**: Scroll to the **Security Audit Log** for an immutable trail of key rotations and training session starts.
+
+Access the dashboard via the unified CLI:
 ```bash
 tensorguard dashboard
 ```
-
-### Step-by-Step Interaction
-
-1.  **🔑 Bootstrap Security**
-    - Locate the **Enterprise Key Management** card at the bottom of the dashboard.
-    - If the status badge shows `MISSING`, click **"Generate New Enterprise Key"**.
-    - The system will create a 128-bit N2HE key and display `LOCKED (READY)`.
-
-2.  **🛰️ Verify Fleet Connection**
-    - Check the **"Secure Link"** status in the header (top-right).
-    - A green dot confirms the gRPC heartbeat with the aggregation hub is active.
-
-3.  **🧠 Initiate Fleet Learning**
-    - Click **"Start Training"** to begin the federated round.
-    - Robots will start buffering expert demonstrations and sending encrypted updates.
-
-4.  **� Monitor Real-time Telemetry**
-    - Watch the **Telemetry Grid** for live metrics:
-        - `Train Latency`: Time for VLA gradient computation.
-        - `Compress`: Time for APHE compression pass.
-        - `Encrypt`: Time for N2HE encryption.
-    - High `MSE Quality` values indicate aggressive sparsification may be degrading signal fidelity.
-
-5.  **📜 Review Governance Audit**
-    - The **Security Audit Log** at the bottom records every security event:
-        - `KEY_REGISTERED`: A new enterprise key was created.
-        - `KEY_ROTATED`: An existing key was replaced.
-        - `SESSION_STARTED`: A new training session began.
 
 ---
 
