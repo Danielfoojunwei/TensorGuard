@@ -26,6 +26,16 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+def numpy_json_serializer(obj):
+    """Helper for JSON serialization of numpy types."""
+    if isinstance(obj, (np.integer, np.floating)):
+        return obj.item()
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, (datetime, datetime)):
+        return obj.isoformat()
+    return str(obj)
+
 
 # ============================================================================
 # 1. Production Operating Envelope
@@ -139,7 +149,7 @@ class ModelTargetMap:
             "modules": sorted(self.module_names),
             "adapters": sorted(self.adapter_ids),
             "shapes": {k: list(v) for k, v in sorted(self.tensor_shapes.items())}
-        }, sort_keys=True)
+        }, sort_keys=True, default=numpy_json_serializer)
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 
 
@@ -225,7 +235,7 @@ class UpdatePackage:
         }
 
         # Serialize metadata as JSON
-        metadata_json = json.dumps(package_dict, sort_keys=True).encode()
+        metadata_json = json.dumps(package_dict, sort_keys=True, default=numpy_json_serializer).encode()
         metadata_size = len(metadata_json).to_bytes(4, 'big')
 
         # Serialize delta tensors
@@ -312,7 +322,7 @@ class UpdatePackage:
             "target_map_fp": self.target_map.fingerprint() if self.target_map else "",
             "base_model_fp": self.base_model_fingerprint
         }
-        data_str = json.dumps(fp_data, sort_keys=True)
+        data_str = json.dumps(fp_data, sort_keys=True, default=numpy_json_serializer)
         return hashlib.sha256(data_str.encode()).hexdigest()
 
 
@@ -451,7 +461,7 @@ class KeyManagementSystem:
         }
 
         with open(self.audit_log_path, 'a') as f:
-            f.write(json.dumps(log_entry) + "\n")
+            f.write(json.dumps(log_entry, default=numpy_json_serializer) + "\n")
 
         logger.info(f"Key audit: {event} for key {key_id}")
 
@@ -848,9 +858,9 @@ class ObservabilityCollector:
             logger.warning(f"ALERT [{alert_type}]: {message}")
 
     def _write_metric(self, metric: Dict[str, Any]):
-        """Write metric to JSONL file"""
+        """Write metric to JSONL file with numpy serialization handling."""
         with open(self.metrics_file, 'a') as f:
-            f.write(json.dumps(metric) + "\n")
+            f.write(json.dumps(metric, default=numpy_json_serializer) + "\n")
 
 
 # ============================================================================

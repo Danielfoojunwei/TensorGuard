@@ -16,22 +16,16 @@ Production-Grade Features:
 """
 
 __version__ = "1.1.0"
-__author__ = "Dynamical.ai"
+__author__ = "Daniel Foo & The TensorGuard Team"
 
-from .edge_client import EdgeClient, create_client
-from .structures import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
-from .adapters import VLAAdapter
+# Core interfaces
+from .core.client import EdgeClient, create_client
+from .api.schemas import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
+from .core.adapters import VLAAdapter
+from .utils.config import settings
 
-from .n2he import (
-    N2HEContext,
-    N2HEParams,
-    N2HE_128,
-    N2HE_192,
-    LWECiphertext,
-)
-
-# Production components
-from .production import (
+# Production components (from core.production)
+from .core.production import (
     # Operating envelope
     OperatingEnvelope,
     PEFTStrategy,
@@ -69,52 +63,39 @@ from .production import (
 )
 
 __all__ = [
-    # Edge Client
     "EdgeClient",
+    "create_client",
     "ShieldConfig",
-    "VLAAdapter",
     "Demonstration",
     "SubmissionReceipt",
     "ClientStatus",
-    "create_client",
-    # N2HE
-    "N2HEContext",
-    "N2HEParams",
-    "N2HE_128",
-    "N2HE_192",
-    "LWECiphertext",
-    # Production - Operating Envelope
+    "VLAAdapter",
+    "settings",
+    
+    # Production
     "OperatingEnvelope",
     "PEFTStrategy",
-    # Production - Update Package
     "UpdatePackage",
     "ModelTargetMap",
     "TrainingMetadata",
     "SafetyStatistics",
     "ObjectiveType",
-    # Production - Policy Profiles
     "DPPolicyProfile",
     "EncryptionPolicyProfile",
     "TrainingPolicyProfile",
-    # Production - Key Management
     "KeyManagementSystem",
     "KeyMetadata",
-    # Production - Evaluation Gating
     "EvaluationGate",
     "SafetyThresholds",
     "EvaluationMetrics",
-    # Production - Training Pipeline
     "TrainingPipeline",
     "TrainingStage",
     "StageConfig",
-    # Production - Observability
     "ObservabilityCollector",
     "RoundLatencyBreakdown",
     "CompressionMetrics",
     "ModelQualityMetrics",
-    # Production - Aggregation
     "ResilientAggregator",
     "ClientContribution",
-    # Production - Utilities
     "print_production_status",
 ]
