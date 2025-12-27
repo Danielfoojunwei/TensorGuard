@@ -1,7 +1,7 @@
 # TensorGuard SDK v1.3.0
 ### Privacy-Preserving VLA Fine-Tuning for Humanoid Robotics
 
-[![Live Demo](https://img.shields.io/badge/Demo-Live%20Dashboard-blue)](https://tensorguard.vercel.app)
+
 [![Python](https://img.shields.io/badge/Python-3.10+-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange)](LICENSE)
 
@@ -231,7 +231,10 @@ We measured the strict cost of security during a live 5-robot federation round.
 
 ## 🎮 7. Dashboard User Flow: Control Center
 
-The TensorGuard Control Center provides a real-time command interface for your robotic fleet. Access it via the CLI or the [**Live Interactive Demo**](https://tensorguard.vercel.app).
+The TensorGuard Control Center provides a real-time command interface for your robotic fleet. Access it via the CLI:
+```bash
+tensorguard dashboard
+```
 
 ### Step-by-Step Interaction
 
