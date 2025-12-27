@@ -64,9 +64,9 @@ Traditional federated learning (e.g., FedAvg) helps, but remains vulnerable to *
 
 ### 🧠 Core Technology: N2HE & MOAI
 
-TensorGuard is built upon the **MOAI (Modular Oblivious Aggregation Infrastructure)** architecture, pioneered by **Dr. Wang Xiang Ning** at DTC (Design Technology Centre), NTU.
+TensorGuard is built upon the **MOAI (Module-Optimising Architecture for Non-Interactive Secure Transformer Inference)** architecture, pioneered by **Dr. Wang Xiang Ning** at DTC (Digital Trust Centre), NTU.
 
-MOAI utilizes **N2HE (Noise-to-Homomorphic-Encryption)**, a novel lattice-based cryptosystem that treats Differential Privacy noise not as a nuisance, but as the randomizer for the encryption scheme itself.
+MOAI utilizes **N2HE (HEXL)**, a novel lattice-based cryptosystem that treats Differential Privacy noise not as a nuisance, but as the randomizer for the encryption scheme itself.
 - **Standard FHE**: Requires heavy noise generation ($100s$ of ms).
 - **N2HE**: Recycles the DP noise layer to secure the LWE (Learning With Errors) sample, reducing encryption overhead by **90%**.
 
