@@ -122,4 +122,4 @@ $env:PYTHONPATH="src"; python -m pytest tests/
 ```
 
 Created by **HintSight Technology**.
-For inquiries reach out to @danielfoojunwei (Telegram), visit (https://www.hintsighttechnologies.com) for more information on our background. 
+For inquiries reach out to @danielfoojunwei (Telegram), visit (https://www.hintsight.com) for more information on our background. 
