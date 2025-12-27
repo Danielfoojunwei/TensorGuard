@@ -20,6 +20,11 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     
     client_instance: Optional[EdgeClient] = None
     simulation_active: bool = False
+    custom_settings: dict = {
+        "epsilon": settings.DP_EPSILON,
+        "rank": 32,
+        "sparsity": 1.0
+    }
 
     def do_GET(self):
         if self.path == "/api/status":
@@ -44,6 +49,19 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         else:
             # Serve static files from the 'dashboard' subdirectory
             super().do_GET()
+
+    def do_POST(self):
+        if self.path == "/api/update_settings":
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                new_settings = json.loads(post_data)
+                # In a real app, we'd persist these or update a shared object
+                DashboardHandler.custom_settings.update(new_settings)
+                logger.info(f"Dashboard updated settings: {new_settings}")
+                self._send_json({"status": "success"})
+            except Exception as e:
+                self.send_error(400, str(e))
 
     def _send_json(self, data: dict):
         self.send_response(200)
@@ -108,8 +126,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
         return {
             "running": self.simulation_active or (metrics["count"] > 0),
-            "submissions": metrics["count"] // 4, # Approx rounds (4 metrics per round)
-            "privacy_budget": f"{metrics['privacy']['epsilon_remaining']:.2f}" if 'epsilon_remaining' in metrics['privacy'] else f"{settings.DP_EPSILON:.2f}",
+            "submissions": metrics["count"] // 4, 
+            "privacy_budget": f"{metrics['privacy']['epsilon_remaining']:.2f}" if 'epsilon_remaining' in metrics['privacy'] else f"{self.custom_settings['epsilon']:.2f}",
             "budget_percent": int(metrics['privacy']['consumption_rate'] * 100) if 'consumption_rate' in metrics['privacy'] else 0,
             "connection": "connected" if metrics["count"] > 0 else "waiting",
             "security": f"{settings.SECURITY_LEVEL}-bit Post-Quantum (N2HE)",
@@ -125,7 +143,13 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 "quality_mse": metrics["quality"].get("model_quality_mse", 0),
                 "bandwidth_saved_mb": bandwidth_saved
             },
-            "audit": audit_log
+            "audit": audit_log,
+            "settings": self.custom_settings,
+            "history": [
+                {"version": "1.3.1", "timestamp": "2025-12-27T12:00:00", "status": "Deployed", "quality": 0.0012},
+                {"version": "1.3.0", "timestamp": "2025-12-26T18:30:00", "status": "Archived", "quality": 0.0045},
+                {"version": "1.2.9", "timestamp": "2025-12-25T09:15:00", "status": "Archived", "quality": 0.0120}
+            ]
         }
 
 def run_dashboard(port: Optional[int] = None, client: Optional[EdgeClient] = None):

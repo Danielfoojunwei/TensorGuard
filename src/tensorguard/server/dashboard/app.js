@@ -2,7 +2,12 @@ const api = {
     start: () => fetch('/api/start').then(r => r.ok),
     stop: () => fetch('/api/stop').then(r => r.ok),
     status: () => fetch('/api/status').then(r => r.json()),
-    genKey: () => fetch('/api/generate_key').then(r => r.json())
+    genKey: () => fetch('/api/generate_key').then(r => r.json()),
+    updateSettings: (settings) => fetch('/api/update_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+    }).then(r => r.json())
 };
 
 const dom = {
@@ -26,19 +31,40 @@ const dom = {
     genStatus: document.getElementById('gen-status'),
     pipeline: document.querySelector('.pipeline'),
     simdBadge: document.getElementById('simd-badge'),
+    viewName: document.getElementById('current-view-name'),
+    navLinks: document.querySelectorAll('.nav-links li'),
+    views: document.querySelectorAll('.view-container'),
     weights: {
         visual: document.getElementById('weight-visual'),
         language: document.getElementById('weight-language'),
         auxiliary: document.getElementById('weight-aux')
     },
-    experts: {
-        visual: document.getElementById('expert-visual'),
-        language: document.getElementById('expert-language'),
-        auxiliary: document.getElementById('expert-aux')
-    }
+    settings: {
+        epsilon: document.getElementById('set-epsilon'),
+        rank: document.getElementById('set-rank'),
+        sparsity: document.getElementById('set-sparsity'),
+        sparsityVal: document.getElementById('sparsity-val'),
+        btnSave: document.getElementById('btn-save-settings')
+    },
+    versionsBody: document.getElementById('version-history-body')
 };
 
 let isRunning = false;
+
+// Tab Switching Logic
+function switchView(viewId) {
+    dom.views.forEach(v => v.classList.remove('active'));
+    dom.navLinks.forEach(l => l.classList.remove('active'));
+
+    document.getElementById(`view-${viewId}`).classList.add('active');
+    document.querySelector(`[data-view="${viewId}"]`).classList.add('active');
+
+    dom.viewName.innerText = viewId.charAt(0).toUpperCase() + viewId.slice(1);
+}
+
+dom.navLinks.forEach(link => {
+    link.onclick = () => switchView(link.dataset.view);
+});
 
 // Poll Status
 async function updateStatus() {
@@ -49,7 +75,7 @@ async function updateStatus() {
         dom.connection.className = `status-badge ${data.connection === 'connected' ? 'connected' : 'disconnected'}`;
         dom.connText.innerText = data.connection === 'connected' ? 'Secure Link' : 'Offline';
 
-        // Stats
+        // Overview Tab Data
         dom.submissionCount.innerText = data.submissions;
         dom.budgetVal.innerText = data.privacy_budget;
         dom.budgetFill.style.width = `${data.budget_percent}%`;
@@ -57,7 +83,7 @@ async function updateStatus() {
         // Key Info
         dom.keyPath.innerText = data.key_path;
         if (data.key_exists) {
-            dom.keyBadge.innerText = "LOCKED (READY)";
+            dom.keyBadge.innerText = "READY";
             dom.keyBadge.className = "badge locked";
         } else {
             dom.keyBadge.innerText = "MISSING";
@@ -70,8 +96,8 @@ async function updateStatus() {
             dom.latTrain.innerText = `${data.telemetry.latency_train.toFixed(1)}ms`;
             dom.latCompress.innerText = `${data.telemetry.latency_compress.toFixed(1)}ms`;
             dom.latEncrypt.innerText = `${data.telemetry.latency_encrypt.toFixed(1)}ms`;
-            dom.compRatio.innerText = `${data.telemetry.compression_ratio.toFixed(0)}:1`;
-            dom.mseVal.innerText = data.telemetry.quality_mse.toFixed(6);
+            if (dom.compRatio) dom.compRatio.innerText = `${data.telemetry.compression_ratio.toFixed(0)}:1`;
+            if (dom.mseVal) dom.mseVal.innerText = data.telemetry.quality_mse.toFixed(6);
         }
 
         // Audit Log
@@ -93,12 +119,23 @@ async function updateStatus() {
         if (data.experts) {
             for (const [key, weight] of Object.entries(data.experts)) {
                 if (dom.weights[key]) dom.weights[key].innerText = `${weight}x`;
-                if (dom.experts[key]) {
-                    if (isRunning) dom.experts[key].classList.add('active');
-                    else dom.experts[key].classList.remove('active');
-                }
             }
         }
+
+        // Versions Tab
+        if (data.history && data.history.length > 0) {
+            dom.versionsBody.innerHTML = data.history.map(v => `
+                <tr>
+                    <td>v${v.version}</td>
+                    <td>${v.timestamp.replace('T', ' ')}</td>
+                    <td><span class="badge ${v.status === 'Deployed' ? 'locked' : 'missing'}">${v.status}</span></td>
+                    <td>${v.quality.toFixed(6)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Sync Settings from server if not touched
+        if (!dom.settings.epsilon.matches(':focus')) dom.settings.epsilon.value = data.settings?.epsilon || 1.0;
 
         // State Sync
         if (data.running !== isRunning) {
@@ -116,15 +153,35 @@ async function updateStatus() {
 function updateControls() {
     dom.btnStart.disabled = isRunning;
     dom.btnStop.disabled = !isRunning;
-
-    if (isRunning) {
-        dom.pipeline.classList.add('active');
-    } else {
-        dom.pipeline.classList.remove('active');
+    if (dom.pipeline) {
+        if (isRunning) dom.pipeline.classList.add('active');
+        else dom.pipeline.classList.remove('active');
     }
 }
 
-// Listeners
+// Settings Listeners
+dom.settings.sparsity.oninput = () => {
+    dom.settings.sparsityVal.innerText = `${dom.settings.sparsity.value}%`;
+};
+
+dom.settings.btnSave.onclick = async () => {
+    dom.settings.btnSave.disabled = true;
+    const s = {
+        epsilon: parseFloat(dom.settings.epsilon.value),
+        rank: parseInt(dom.settings.rank.value),
+        sparsity: parseFloat(dom.settings.sparsity.value)
+    };
+    try {
+        const res = await api.updateSettings(s);
+        alert("Settings synchronized with fleet.");
+    } catch (err) {
+        console.error("Failed to update settings", err);
+    } finally {
+        dom.settings.btnSave.disabled = false;
+    }
+};
+
+// Start/Stop
 dom.btnStart.onclick = async () => {
     await api.start();
     updateStatus();
@@ -137,25 +194,16 @@ dom.btnStop.onclick = async () => {
 
 dom.btnGenKey.onclick = async () => {
     dom.btnGenKey.disabled = true;
-    dom.genStatus.innerText = "Generating 128-bit N2HE key...";
     try {
         const res = await api.genKey();
         if (res.status === 'success') {
-            dom.genStatus.innerText = `Success: ${res.path}`;
-            dom.genStatus.className = "status-msg success";
-        } else {
-            throw new Error(res.message || "Key generation failed");
+            updateStatus();
         }
-    } catch (e) {
-        dom.genStatus.innerText = `Error: ${e.message}`;
-        dom.genStatus.className = "status-msg error";
     } finally {
         dom.btnGenKey.disabled = false;
-        setTimeout(() => { dom.genStatus.innerText = ""; }, 5000);
-        updateStatus();
     }
 };
 
 // Start Polling
-setInterval(updateStatus, 1000);
+setInterval(updateStatus, 1500);
 updateStatus();

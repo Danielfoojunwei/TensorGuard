@@ -11,143 +11,237 @@
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
             <div class="brand">
                 <div class="logo-icon">🛡️</div>
                 <h1>TensorGuard</h1>
-                <div id="simd-badge" class="simd-badge hidden">SIMD Optimized</div>
             </div>
-            <div class="status-badge" id="connection-status">
-                <span class="dot"></span> <span id="conn-text">Connecting...</span>
+            <ul class="nav-links">
+                <li class="active" data-view="overview">
+                    <span class="icon">📊</span> Overview
+                </li>
+                <li data-view="settings">
+                    <span class="icon">⚙️</span> Settings
+                </li>
+                <li data-view="usage">
+                    <span class="icon">📈</span> Usage
+                </li>
+                <li data-view="versions">
+                    <span class="icon">📜</span> Versions
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div id="simd-badge" class="simd-badge hidden">SIMD</div>
+                <p>v1.4.0-Enterprise</p>
             </div>
-        </header>
+        </nav>
 
-        <!-- Main Card -->
-        <main>
-            <div class="card">
-                <h2>Privacy-Preserving Fine-Tuning</h2>
-                <p class="subtitle">Robot Fleet: <strong>Manufacturing Zone A</strong> (5 Units)</p>
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <header>
+                <div class="view-title">
+                    <h2 id="current-view-name">Overview</h2>
+                </div>
+                <div class="status-badge" id="connection-status">
+                    <span class="dot"></span> <span id="conn-text">Connecting...</span>
+                </div>
+            </header>
 
-                <!-- Encryption Visualization -->
-                <div class="encryption-viz">
-                    <div class="secure-line">
-                        <div class="icon robot">🤖</div>
-                        <div class="pipeline">
-                            <div class="stage" title="Gradient Clipping">✂️</div>
-                            <div class="arrow">→</div>
-                            <div class="stage" title="Sparsification">📉</div>
-                            <div class="arrow">→</div>
-                            <div class="stage" title="APHE Compression">📦</div>
-                            <div class="arrow">→</div>
-                            <div class="stage lock" title="N2HE Encryption">🔒</div>
+            <!-- View: Overview -->
+            <section id="view-overview" class="view-container active">
+                <div class="dashboard-grid">
+                    <!-- Existing Telemetry Card -->
+                    <div class="card main-card">
+                        <h3>Real-Time Fleet Telemetry</h3>
+                        <p class="subtitle">Zone: <strong>Manufacturing A</strong></p>
+
+                        <div class="encryption-viz">
+                            <div class="secure-line">
+                                <div class="icon robot">🤖</div>
+                                <div class="pipeline">
+                                    <div class="stage" title="Gradient Clipping">✂️</div>
+                                    <div class="arrow">→</div>
+                                    <div class="stage" title="Sparsification">📉</div>
+                                    <div class="arrow">→</div>
+                                    <div class="stage" title="APHE Compression">📦</div>
+                                    <div class="arrow">→</div>
+                                    <div class="stage lock" title="N2HE Encryption">🔒</div>
+                                </div>
+                                <div class="icon cloud">☁️</div>
+                            </div>
                         </div>
-                        <div class="icon cloud">☁️</div>
+
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="label">Submissions</span>
+                                <span class="value" id="submission-count">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="label">Saved Bandwidth</span>
+                                <span class="value highlight" id="saved-mb">-</span>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-section">
+                            <div class="telemetry-grid">
+                                <div class="telemetry-card">
+                                    <span class="tel-label">Train</span>
+                                    <span class="tel-value" id="lat-train">-</span>
+                                </div>
+                                <div class="telemetry-card">
+                                    <span class="tel-label">Compress</span>
+                                    <span class="tel-value" id="lat-compress">-</span>
+                                </div>
+                                <div class="telemetry-card">
+                                    <span class="tel-label">Encrypt</span>
+                                    <span class="tel-value" id="lat-encrypt">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MoI Section -->
+                    <div class="card experts-card">
+                        <h3>Mixture of Intelligence Experts</h3>
+                        <div class="experts-grid">
+                            <div class="expert-item" id="expert-visual">
+                                <span class="icon">👁️</span>
+                                <span class="name">Visual</span>
+                                <span class="weight" id="weight-visual">1.0x</span>
+                            </div>
+                            <div class="expert-item" id="expert-language">
+                                <span class="icon">📝</span>
+                                <span class="name">Language</span>
+                                <span class="weight" id="weight-language">0.8x</span>
+                            </div>
+                            <div class="expert-item" id="expert-aux">
+                                <span class="icon">🔧</span>
+                                <span class="name">Auxiliary</span>
+                                <span class="weight" id="weight-aux">1.2x</span>
+                            </div>
+                        </div>
+                        <div class="experts-explanation">
+                            <p>Resource weighting dynamically balances visual, semantic, and auxiliary experts based on
+                                current task complexity.</p>
+                        </div>
+                    </div>
+
+                    <!-- Budget & Security -->
+                    <div class="card security-card">
+                        <h3>Privacy & Security</h3>
+                        <div class="budget-section">
+                            <div class="budget-header">
+                                <span class="label">Privacy Budget (ε)</span>
+                                <span class="value" id="budget-val">5.00</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" id="budget-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="key-status-mini">
+                            <span id="key-path" class="key-path">keys/enterprise_key.npy</span>
+                            <span id="key-badge" class="badge">Checking...</span>
+                        </div>
+                        <button id="btn-gen-key" class="btn tertiary">Rotate Key</button>
+                    </div>
+
+                    <!-- Audit Log -->
+                    <div class="card audit-card">
+                        <h3>Security Audit Log</h3>
+                        <div id="audit-log" class="audit-log">
+                            <div class="audit-entry empty">No security events recorded.</div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="label">Encrypted Submissions</span>
-                        <span class="value" id="submission-count">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Bandwidth Saved</span>
-                        <span class="value highlight" id="saved-mb">-</span>
-                    </div>
+                <!-- Global Controls -->
+                <div class="global-controls">
+                    <button id="btn-start" class="btn primary">Resume Federation</button>
+                    <button id="btn-stop" class="btn secondary" disabled>Pause</button>
                 </div>
+            </section>
 
-                <!-- Telemetry Section -->
-                <div class="telemetry-section">
-                    <div class="telemetry-grid">
-                        <div class="telemetry-card">
-                            <span class="tel-label">Train Latency</span>
-                            <span class="tel-value" id="lat-train">-</span>
+            <!-- View: Settings -->
+            <section id="view-settings" class="view-container">
+                <div class="card settings-card">
+                    <h3>System Parameters</h3>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="set-epsilon">Privacy Epsilon (ε)</label>
+                            <input type="number" id="set-epsilon" value="1.0" step="0.1" title="Privacy Epsilon">
                         </div>
-                        <div class="telemetry-card">
-                            <span class="tel-label">Compress</span>
-                            <span class="tel-value" id="lat-compress">-</span>
+                        <div class="setting-item">
+                            <label for="set-rank">LoRA Rank</label>
+                            <select id="set-rank" title="LoRA Rank">
+                                <option value="8">8 (Efficient)</option>
+                                <option value="16">16 (Standard)</option>
+                                <option value="32" selected>32 (High Capacity)</option>
+                            </select>
                         </div>
-                        <div class="telemetry-card">
-                            <span class="tel-label">Encrypt</span>
-                            <span class="tel-value" id="lat-encrypt">-</span>
+                        <div class="setting-item">
+                            <label for="set-sparsity">Grad Sparsity (%)</label>
+                            <input type="range" id="set-sparsity" min="0.1" max="5.0" step="0.1" value="1.0"
+                                title="Grad Sparsity">
+                            <span id="sparsity-val">1.0%</span>
+                        </div>
+                        <div class="setting-item">
+                            <label>Security Level</label>
+                            <span class="badge locked">PQ-128 (N2HE)</span>
                         </div>
                     </div>
-                    <div class="quality-info">
-                        <span>Compression Ratio: <strong id="comp-ratio">-</strong></span>
-                        <span>MSE Quality: <strong id="mse-val">-</strong></span>
-                    </div>
+                    <button class="btn primary" id="btn-save-settings">Apply Changes</button>
                 </div>
+            </section>
 
-                <!-- MoI Experts Section -->
-                <div class="experts-section">
-                    <h3>Mixture of Intelligence Experts</h3>
-                    <div class="experts-grid">
-                        <div class="expert-item" id="expert-visual">
-                            <span class="icon">👁️</span>
-                            <span class="name">Visual</span>
-                            <span class="weight" id="weight-visual">1.0x</span>
+            <!-- View: Usage -->
+            <section id="view-usage" class="view-container">
+                <div class="card usage-card">
+                    <h3>Fleet Analytics</h3>
+                    <div class="analytics-metrics">
+                        <div class="metric">
+                            <span class="label">Total Bandwidth Saved</span>
+                            <span class="value">412.5 GB</span>
                         </div>
-                        <div class="expert-item" id="expert-language">
-                            <span class="icon">📝</span>
-                            <span class="name">Language</span>
-                            <span class="weight" id="weight-language">0.8x</span>
-                        </div>
-                        <div class="expert-item" id="expert-aux">
-                            <span class="icon">🔧</span>
-                            <span class="name">Auxiliary</span>
-                            <span class="weight" id="weight-aux">1.2x</span>
+                        <div class="metric">
+                            <span class="label">Avg Aggregation Time</span>
+                            <span class="value">1.4s</span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Privacy Budget -->
-                <div class="budget-section">
-                    <div class="budget-header">
-                        <span class="label">Privacy Budget (ε)</span>
-                        <span class="value" id="budget-val">5.00</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" id="budget-fill"></div>
-                    </div>
-                    <p class="crypto-note">Protected by N2HE Homomorphic Encryption</p>
-                </div>
-
-                <!-- Key Management Section -->
-                <div class="key-section">
-                    <h3>Enterprise Key Management</h3>
-                    <div class="key-status-card">
-                        <div class="key-info">
-                            <span class="key-label">Active Key:</span>
-                            <span id="key-path" class="key-path">keys/node_key.pem</span>
-                        </div>
-                        <div id="key-badge" class="badge">Checking...</div>
-                    </div>
-                    <button id="btn-gen-key" class="btn tertiary">Generate New Enterprise Key</button>
-                    <p id="gen-status" class="status-msg"></p>
-                </div>
-
-                <!-- Controls -->
-                <div class="controls">
-                    <button id="btn-start" class="btn primary">Start Training</button>
-                    <button id="btn-stop" class="btn secondary" disabled>Stop</button>
-                </div>
-                <!-- Audit Log Section -->
-                <div class="audit-section">
-                    <h3>Security Audit Log</h3>
-                    <div id="audit-log" class="audit-log">
-                        <div class="audit-entry empty">No security events recorded.</div>
+                    <div class="chart-placeholder">
+                        <p>Usage chart visualization placeholder...</p>
                     </div>
                 </div>
-            </div>
-        </main>
+            </section>
 
-        <footer>
-            <p>Powered by <strong>APHE</strong> & <strong>N2HE</strong></p>
-        </footer>
+            <!-- View: Versions -->
+            <section id="view-versions" class="view-container">
+                <div class="card versions-card">
+                    <h3>Model Version History</h3>
+                    <table class="versions-table">
+                        <thead>
+                            <tr>
+                                <th>Version</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                                <th>Quality (MSE)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="version-history-body">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
     </div>
+
+    <footer>
+        <p>Enterprise Management Portal | Powered by APHE & N2HE</p>
+    </footer>
+
     <script src="app.js"></script>
 </body>
 
