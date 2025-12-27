@@ -159,16 +159,16 @@ We assume an **"Honest-but-Curious"** server model where the aggregator follows 
 
 ## 💼 5. Applied Use Cases: Fine-Tuning Scenarios
 
-### 🤖 Supported Robot Learning Paradigms
+### 🤖 Supported PEFT Post-Training Paradigms
 
-We support the full spectrum of modern robot learning, from imitation to reinforcement.
+TensorGuard specializes in **Parameter-Efficient Fine-Tuning (PEFT)** approaches, specifically LoRA, to enable secure aggregation on resource-constrained robots.
 
-| Learning Paradigm | Methodology | Reference Paper | Dataset / Code | Impact & Trade-offs |
+| Learning Paradigm | Methodology | PEFT Implementation | Evidence / Code | Trade-offs |
 | :--- | :--- | :--- | :--- | :--- |
-| **Federated Visual Imitation (F-IL)** | **OpenVLA / LoRA**<br>Fine-tuning 7B VLA on distributed demonstrations. | [Kim et al., 2024](https://arxiv.org/abs/2406.09246)<br>*(OpenVLA)* | [Open X-Embodiment](https://github.com/google-deepmind/open_x_embodiment)<br>[OpenVLA GitHub](https://github.com/openvla/openvla) | **+Generalization**: Learns from diverse hospital/factory data.<br>**-Latency**: N2HE overhead (1.4s) makes it offline-only. |
-| **Language-Conditioned Control** | **RT-2 Co-Fine-Tuning**<br>Injecting new semantic skills (e.g., "pick up the *red* apple") via text tokens. | [Brohan et al., 2023](https://arxiv.org/abs/2307.15818)<br>*(RT-2)* | [Robotics Transformer](https://github.com/google-deepmind/rt-1)<br>[Language-Table](https://github.com/google-research/language-table) | **+Semantic Understanding**: Robots understand new vocabulary securely.<br>**-Forgetfulness**: Requires replay buffer preventing catastrophic forgetting. |
-| **Federated Reinforcement Learning (FRL)** | **Q-Function Aggregation**<br>Sharing gradients of the Critic (Q-network) while keeping Actor local. | [Liu et al., 2019](https://arxiv.org/abs/1905.01046)<br>*(Lifelong Federated RL)* | [FedDrive](https://github.com/Erosinho13/FedDrive)<br>[OmniGibson](https://github.com/StanfordVL/OmniGibson) | **+Sample Efficiency**: fast convergence for rare edge cases (e.g., slipping).<br>**-Stability**: Training instability due to non-IID exploration. |
-| **Sim-to-Real Adaptation** | **Residual Learning**<br>Learning a $\Delta(s)$ correction term for the base policy. | [Tobin et al., 2017](https://arxiv.org/abs/1703.06907)<br>*(Domain Randomization)* | [Robomimic](https://github.com/ARISE-Initiative/robomimic)<br>[LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) | **+Reality Gap**: Safely bridges sim-to-real gap without exposing site photos.<br>**-Calibration**: Requires high-fidelity simulator. |
+| **Federated Visual Imitation** | **OpenVLA Adaptation** | **LoRA** injected into Attention layers (Rank=32). Base model frozen. | [Kim et al., 2024](https://arxiv.org/abs/2406.09246)<br>*(OpenVLA)* | **+Efficiency**: Only 1% params trained.<br>**-Capacity**: Harder to learn completely new physics. |
+| **Language-Conditioned Control** | **Vocab Expansion** | **LoRA** on LLM backbone to map new tokens (e.g., "welding") to actions. | [Brohan et al., 2023](https://arxiv.org/abs/2307.15818)<br>*(RT-2 LoRA)* | **+Safety**: Base language capabilities preserved.<br>**-Context**: Limited new token generalization. |
+| **Offline Federated RL** | **Policy Improvement** | **LoRA-based Actor-Critic**: Fine-tuning the Actor's policy head via frozen Critic. | [Li et al., 2023](https://arxiv.org/abs/2309.02462)<br>*(LoRA-RL)* | **+Stability**: Low-rank constraints prevent policy collapse.<br>**-Optimality**: May land in local optima. |
+| **Sim-to-Real Adaptation** | **Domain Randomization** | **Residual Adapters**: Learning a lightweight $\Delta(x)$ adapter layer for real-world visual shift. | [Geng et al., 2023](https://arxiv.org/abs/2304.09459)<br>*(Adapter-Sim2Real)* | **+Speed**: Rapid adaptation with few real samples.<br>**-Scope**: Cannot fix fundamental sim failures. |
 
 ### Industrial Application Scenarios
 
