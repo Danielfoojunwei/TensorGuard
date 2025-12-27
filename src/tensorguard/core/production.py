@@ -34,6 +34,8 @@ def numpy_json_serializer(obj):
         return obj.tolist()
     if isinstance(obj, (datetime, datetime)):
         return obj.isoformat()
+    if isinstance(obj, Enum):
+        return obj.value
     return str(obj)
 
 
@@ -212,7 +214,7 @@ class UpdatePackage:
     safety_stats: SafetyStatistics = field(default_factory=SafetyStatistics)
 
     # Compatibility
-    tensorguard_version: str = "1.1.0"
+    tensorguard_version: str = "1.3.0"
 
     def serialize(self) -> bytes:
         """Serialize to bytes for transmission"""
@@ -253,22 +255,46 @@ class UpdatePackage:
 
     @classmethod
     def deserialize(cls, data: bytes) -> 'UpdatePackage':
-        """Deserialize from bytes"""
+        """Deserialize from bytes with robust bounds checking"""
+        if len(data) < 4:
+            raise ValueError("Payload too small for metadata size")
+            
         # Parse metadata size
         metadata_size = int.from_bytes(data[:4], 'big')
+        if metadata_size > len(data) - 4:
+            raise ValueError(f"Invalid metadata size: {metadata_size}")
+            
         metadata_json = data[4:4+metadata_size]
-        package_dict = json.loads(metadata_json.decode())
+        try:
+            package_dict = json.loads(metadata_json.decode())
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            raise ValueError(f"Failed to parse metadata JSON: {e}")
 
         # Parse delta tensors
         delta_tensors = {}
         offset = 4 + metadata_size
         while offset < len(data):
+            if len(data) - offset < 4:
+                break # Trailing bytes
+                
             name_size = int.from_bytes(data[offset:offset+4], 'big')
             offset += 4
+            
+            if len(data) - offset < name_size:
+                raise ValueError(f"Corrupt payload: name_size {name_size} exceeds remaining data")
+                
             name = data[offset:offset+name_size].decode()
             offset += name_size
+            
+            if len(data) - offset < 4:
+                raise ValueError(f"Corrupt payload: expected tensor_size after name '{name}'")
+                
             tensor_size = int.from_bytes(data[offset:offset+4], 'big')
             offset += 4
+            
+            if len(data) - offset < tensor_size:
+                raise ValueError(f"Corrupt payload: tensor_size {tensor_size} for '{name}' exceeds remaining data")
+                
             tensor_bytes = data[offset:offset+tensor_size]
             offset += tensor_size
             delta_tensors[name] = tensor_bytes
@@ -900,22 +926,27 @@ class ResilientAggregator:
         self.enable_async = enable_async
 
         self.contributions: List[ClientContribution] = []
+        self.received_client_ids: set = set()
         self.client_health: Dict[str, float] = {}  # Client ID -> health score
         self.round_start_time: Optional[datetime] = None
 
     def start_round(self):
         """Start a new aggregation round"""
         self.contributions.clear()
+        self.received_client_ids.clear()
         self.round_start_time = datetime.utcnow()
         logger.info(f"Started aggregation round at {self.round_start_time.isoformat()}")
 
     def add_contribution(self, contribution: ClientContribution) -> bool:
         """
-        Add a client contribution.
+        Add a client contribution with unique client enforcement.
 
         Returns:
             True if contribution accepted, False if rejected
         """
+        if contribution.client_id in self.received_client_ids:
+            logger.warning(f"Rejecting duplicate contribution from {contribution.client_id}")
+            return False
         # Calculate staleness
         if self.round_start_time:
             contribution.staleness_seconds = (contribution.received_at - self.round_start_time).total_seconds()
@@ -936,6 +967,7 @@ class ResilientAggregator:
         contribution.health_score = client_health
 
         self.contributions.append(contribution)
+        self.received_client_ids.add(contribution.client_id)
         logger.info(f"Accepted contribution from {contribution.client_id} (weight={contribution.weight:.3f}, staleness={contribution.staleness_seconds:.0f}s)")
         return True
 

@@ -49,8 +49,10 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         dp_profile: Optional[DPPolicyProfile] = None,
         encryption_profile: Optional[EncryptionPolicyProfile] = None,
         training_profile: Optional[TrainingPolicyProfile] = None,
-        enable_observability: bool = True
+        enable_observability: bool = True,
+        cid: str = "0"
     ):
+        self.cid = cid
         self.config = config or ShieldConfig(
             model_type="pi0", 
             key_path=settings.KEY_PATH,
@@ -79,7 +81,9 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         self._total_submissions = 0
         self._error_memory: Dict[str, np.ndarray] = {}
         self._current_round = 0
+        self._MAX_BUFFER_SIZE = 100 # Production safety limit
 
+        logger.debug(f"EdgeClient initialized. Bases: {[b.__name__ for b in self.__class__.__bases__]}")
         logger.info(f"EdgeClient initialized for {self.config.model_type}")
 
     def set_adapter(self, adapter: VLAAdapter) -> None:
@@ -88,8 +92,13 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         logger.info(f"VLA Adapter configured: {type(adapter).__name__}")
 
     def add_demonstration(self, demo: Demonstration):
-        """Buffer a demonstration for processing."""
+        """Buffer a demonstration for processing with capacity enforcement."""
+        if len(self._current_round_demos) >= self._MAX_BUFFER_SIZE:
+            logger.warning(f"Demonstration buffer full ({self._MAX_BUFFER_SIZE}). Dropping oldest.")
+            self._current_round_demos.pop(0)
+            
         self._current_round_demos.append(demo)
+        logger.debug(f"Demonstration buffered. Buffer size: {len(self._current_round_demos)}")
 
     def get_status(self) -> ClientStatus:
         """Return current status metrics."""
@@ -97,12 +106,13 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
             pending_submissions=len(self._current_round_demos),
             total_submissions=self._total_submissions,
             privacy_budget_remaining=max(0.0, self.config.dp_epsilon - self._privacy_budget_used),
-            last_model_version="v1.1.0",
+            last_model_version="v1.3.0",
             connection_status="online"
         )
 
     def process_round(self) -> Optional[bytes]:
         """Compute, privacy-process, and encrypt gradients for all buffered demos."""
+        logger.info(f"process_round called. Buffer size: {len(self._current_round_demos)}")
         if not self._current_round_demos:
             return None
         
@@ -115,45 +125,59 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         latency = RoundLatencyBreakdown()
         train_start = time.time()
 
-        # 1. MoI Gradient Computation
+        # 1. MoI Gradient Computation with Graceful Failure
         combined_grads = {}
-        for demo in self._current_round_demos:
-            experts = self._adapter.compute_expert_gradients(demo)
-            for exp_name, grads in experts.items():
-                weight = {"visual": 1.0, "language": 0.8, "auxiliary": 1.2}.get(exp_name, 1.0)
-                for k, v in grads.items():
-                    combined_grads[k] = combined_grads.get(k, 0) + v * weight
-        
-        demo_count = len(self._current_round_demos)
-        self._current_round_demos = []
-        latency.train_ms = (time.time() - train_start) * 1000
-
-        # 2. Privacy Pipeline with Error Feedback
-        # a) Add Residuals
-        for k, v in self._error_memory.items():
-            if k in combined_grads: combined_grads[k] += v
-
-        # b) Clip
-        clipped = self._clipper.clip(combined_grads)
-        
-        # c) Sparsify
-        sparse = self._sparsifier.sparsify(clipped)
-        
-        # d) Update residuals
-        self._error_memory = {k: clipped[k] - sparse[k] for k in clipped if k in sparse}
-
-        # 3. Aggressive Compression & Encryption
-        compress_start = time.time()
-        pixel_data = self._compressor.compress(sparse)
-        latency.compress_ms = (time.time() - compress_start) * 1000
-        
-        # Quality Check
-        check = self._compressor.decompress(pixel_data)
-        quality_mse = self._quality_monitor.check_quality(sparse, check)
-        
-        encrypt_start = time.time()
-        encrypted = self._encryptor.encrypt(pixel_data)
-        latency.encrypt_ms = (time.time() - encrypt_start) * 1000
+        processed_demos = []
+        try:
+            for demo in self._current_round_demos:
+                try:
+                    experts = self._adapter.compute_expert_gradients(demo)
+                    for exp_name, grads in experts.items():
+                        weight = {"visual": 1.0, "language": 0.8, "auxiliary": 1.2}.get(exp_name, 1.0)
+                        for k, v in grads.items():
+                            combined_grads[k] = combined_grads.get(k, 0) + v * weight
+                    processed_demos.append(demo)
+                except Exception as e:
+                    logger.error(f"Failed to process demonstration: {e}")
+                    # Continue to next demo instead of crashing the whole round
+            
+            if not combined_grads:
+                logger.warning("No gradients computed in this round")
+                return None
+                
+            demo_count = len(processed_demos)
+            self._current_round_demos = []
+            latency.train_ms = (time.time() - train_start) * 1000
+    
+            # 2. Privacy Pipeline with Error Feedback
+            # a) Add Residuals
+            for k, v in self._error_memory.items():
+                if k in combined_grads: combined_grads[k] += v
+    
+            # b) Clip
+            clipped = self._clipper.clip(combined_grads)
+            
+            # c) Sparsify
+            sparse = self._sparsifier.sparsify(clipped)
+            
+            # d) Update residuals
+            self._error_memory = {k: clipped[k] - sparse[k] for k in clipped if k in sparse}
+    
+            # 3. Aggressive Compression & Encryption
+            compress_start = time.time()
+            pixel_data = self._compressor.compress(sparse)
+            latency.compress_ms = (time.time() - compress_start) * 1000
+            
+            # Quality Check
+            check = self._compressor.decompress(pixel_data)
+            quality_mse = self._quality_monitor.check_quality(sparse, check)
+            
+            encrypt_start = time.time()
+            encrypted = self._encryptor.encrypt(pixel_data)
+            latency.encrypt_ms = (time.time() - encrypt_start) * 1000
+        except Exception as e:
+            logger.critical(f"Critical failure in process_round pipeline: {e}")
+            return None
 
         # Stats for UpdatePackage
         original_size = sum(g.nbytes for g in sparse.values())
@@ -216,12 +240,41 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         return []
 
     def fit(self, parameters: List[np.ndarray], config: Dict[str, Any]) -> Tuple[List[np.ndarray], int, Dict[str, Any]]:
-        package_bytes = self.process_round()
-        if package_bytes:
-            return [np.frombuffer(package_bytes, dtype=np.uint8)], 1, {"round": self._current_round}
-        return [], 0, {"error": "no_data"}
+        try:
+            with open("edge_client_internal.log", "a") as f:
+                f.write(f"!!! EdgeClient: fit() called. Buffer size: {len(self._current_round_demos)}\n")
+            
+            package_bytes = self.process_round()
+            if package_bytes:
+                with open("edge_client_internal.log", "a") as f:
+                    f.write(f"!!! EdgeClient: Sending package ({len(package_bytes)} bytes)\n")
+                
+                # Chunk the payload into 1MB segments to avoid gRPC monolithic issues
+                chunk_size = 1024 * 1024
+                payload_array = np.frombuffer(package_bytes, dtype=np.uint8)
+                chunks = []
+                for i in range(0, len(payload_array), chunk_size):
+                    chunks.append(payload_array[i:i + chunk_size].copy())
+                
+                with open("edge_client_internal.log", "a") as f:
+                    f.write(f"!!! EdgeClient: Returning {len(chunks)} chunks of size {len(package_bytes)}\n")
+                    
+                return chunks, 1, {"status": "ok"}
+                # ...
+            
+            with open("edge_client_internal.log", "a") as f:
+                f.write("!!! EdgeClient: Warning - nothing to send\n")
+            return [], 0, {"error": "no_data"}
+        except Exception as e:
+            with open("edge_client_internal.log", "a") as f:
+                f.write(f"!!! EdgeClient: CRITICAL ERROR IN FIT: {e}\n")
+            import traceback
+            with open("edge_client_internal.log", "a") as f:
+                f.write(traceback.format_exc())
+            return [], 0, {"error": str(e)}
 
 def create_client(model_type: str = "pi0", **kwargs) -> EdgeClient:
     """Factory for EdgeClient."""
+    cid = kwargs.pop("cid", "0")
     config = ShieldConfig(model_type=model_type, **kwargs)
-    return EdgeClient(config)
+    return EdgeClient(config, cid=cid)

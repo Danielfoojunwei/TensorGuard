@@ -16,10 +16,10 @@ def test_client_missing_adapter():
     with pytest.raises(ValidationError):
         client.process_round()
 
-def test_client_with_showcase_adapter():
-    from tensorguard.utils.showcase import ShowcaseAdapter
+def test_client_with_adapter():
+    from tensorguard.experiments.validation_suite import OFTAdapter
     client = create_client()
-    client.set_adapter(ShowcaseAdapter())
+    client.set_adapter(OFTAdapter())
     
     client.add_demonstration(Demonstration(observations=[np.zeros(10)], actions=[np.zeros(2)]))
     encrypted = client.process_round()
@@ -27,3 +27,4 @@ def test_client_with_showcase_adapter():
     assert encrypted is not None
     assert isinstance(encrypted, bytes)
     assert client.get_status().total_submissions == 1
+

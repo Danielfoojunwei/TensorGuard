@@ -8,8 +8,10 @@ try:
         Parameters,
         Scalar,
         FitRes,
+        FitIns,
         parameters_to_ndarrays,
     )
+    from flwr.server.client_manager import ClientManager
     from flwr.server.client_proxy import ClientProxy
 except ImportError:
     class fl:
@@ -66,7 +68,15 @@ class TensorGuardStrategy(fl.server.strategy.FedAvg):
         self.observability = ObservabilityCollector() if enable_observability else None
         
         logger.info(f"TensorGuard Strategy initialized: quorum={quorum_threshold}")
-        
+    def configure_fit(
+        self, server_round: int, parameters: Parameters, client_manager: ClientManager
+    ) -> List[Tuple[ClientProxy, FitIns]]:
+        """Sample clients and send fit instructions."""
+        logger.info(f"--- Strategy: configure_fit round {server_round} ---")
+        clients = super().configure_fit(server_round, parameters, client_manager)
+        logger.info(f"Strategy sampled {len(clients)} clients")
+        return clients
+
     def aggregate_fit(
         self,
         server_round: int,
@@ -84,8 +94,18 @@ class TensorGuardStrategy(fl.server.strategy.FedAvg):
         for client_proxy, fit_res in results:
             # Deserialize UpdatePackage from first tensor
             try:
+                logger.info(f"DEBUG: Client {client_proxy.cid} FitRes: status={fit_res.status}, metrics={fit_res.metrics}")
+                logger.info(f"DEBUG: Client {client_proxy.cid} Parameters tensors count: {len(fit_res.parameters.tensors)}")
+                logger.info(f"Client {client_proxy.cid} sent Parameters with {len(fit_res.parameters.tensors)} tensors")
                 ndarrays = parameters_to_ndarrays(fit_res.parameters)
-                package = UpdatePackage.deserialize(ndarrays[0].tobytes())
+                logger.info(f"Client {client_proxy.cid} sent {len(ndarrays)} ndarrays")
+                if len(ndarrays) == 0:
+                    logger.warning(f"Client {client_proxy.cid} sent empty parameters")
+                    continue
+                
+                # Reassemble chunked payload (all tensors are parts of the payload)
+                payload_bytes = b"".join([arr.tobytes() for arr in ndarrays])
+                package = UpdatePackage.deserialize(payload_bytes)
                 
                 contribution = ClientContribution(
                     client_id=str(client_proxy.cid),

@@ -3,12 +3,16 @@ TensorGuard Cryptography Module (N2HE)
 
 Integrated into TensorGuard for privacy-preserving VLA fine-tuning.
 Based on HintSight Technology's N2HE-hexl library.
+
+WARNING: This implementation uses numpy.random. In a hardened production
+environment, replace with a CSPRNG (e.g., secrets module).
 """
 
 import numpy as np
 import struct
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
 
 from ..utils.config import settings
@@ -66,13 +70,22 @@ class LWECiphertext:
             params = params or N2HEParams(n=n)
             offset = 13
             a_size = k * n * 8
+            
+            if len(data) < offset + a_size:
+                raise CryptographyError("Ciphertext payload too small for 'A' matrix")
+                
             a_arr = np.frombuffer(data[offset : offset + a_size], dtype=np.int64)
             if k > 1: a_arr = a_arr.reshape(k, n)
             offset += a_size
             
             if flags & 0x01:
-                b_val = np.frombuffer(data[offset : offset + k * 8], dtype=np.int64)
+                b_size = k * 8
+                if len(data) < offset + b_size:
+                    raise CryptographyError("Ciphertext payload too small for 'B' vector")
+                b_val = np.frombuffer(data[offset : offset + b_size], dtype=np.int64)
             else:
+                if len(data) < offset + 8:
+                    raise CryptographyError("Ciphertext payload too small for 'B' scalar")
                 b_val = struct.unpack('<q', data[offset : offset + 8])[0]
                 
             return cls(a=a_arr, b=b_val, params=params)
@@ -90,6 +103,27 @@ class N2HEContext:
         """Generate secret key."""
         self.lwe_key = np.random.choice([-1, 0, 1], size=self.params.n).astype(np.int64)
         logger.debug("N2HE Keys generated")
+
+    def save_key(self, path: Union[str, Path]):
+        """Save the secret key to a file."""
+        if self.lwe_key is None:
+            raise CryptographyError("No key to save")
+        
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # In production, this would be encrypted with a Master Key/KMS
+        np.save(path, self.lwe_key)
+        path.chmod(0o600)
+        logger.info(f"N2HE key saved to {path}")
+
+    def load_key(self, path: Union[str, Path]):
+        """Load the secret key from a file."""
+        path = Path(path)
+        if not path.exists():
+            raise CryptographyError(f"Key file not found: {path}")
+        
+        self.lwe_key = np.load(path)
+        logger.info(f"N2HE key loaded from {path}")
 
     def encrypt_batch(self, messages: np.ndarray) -> LWECiphertext:
         """Vectorized encryption."""
@@ -129,11 +163,16 @@ class N2HEContext:
 
 class N2HEEncryptor:
     """Professional wrapper for N2HE encryption with chunking and key rotation."""
-    def __init__(self, key_path: str, security_level: int = 128):
+    def __init__(self, key_path: Optional[str] = None, security_level: int = 128):
         self.params = N2HEParams(security_bits=security_level)
         self._ctx = N2HEContext(self.params)
         self._usage_count = 0
         self._max_uses = settings.MAX_KEY_USES
+        
+        if key_path and Path(key_path).exists():
+            self._ctx.load_key(key_path)
+        else:
+            self._ctx.generate_keys()
         
     def encrypt(self, data: bytes) -> bytes:
         """Encrypt binary data with SIMD folding and chunking."""
@@ -148,15 +187,25 @@ class N2HEEncryptor:
         
         # Chunking for lattice alignment
         chunk_size = self.params.n * 4
-        chunks = [self._ctx.encrypt_batch(packed[i : i + chunk_size]).serialize() 
+        chunks = [self._ctx.encrypt_batch(packed[i : i + chunk_size]).serialize().hex() 
                  for i in range(0, len(packed), chunk_size)]
         
-        return pickle.dumps({'chunks': chunks, 'len': len(data)})
+        # Use JSON instead of pickle to prevent RCE
+        import json
+        return json.dumps({'chunks': chunks, 'len': len(data)}).encode()
 
     def decrypt(self, ciphertext: bytes) -> bytes:
-        """Decrypt chunked ciphertext."""
-        import pickle
-        payload = pickle.loads(ciphertext)
-        dec_chunks = [self._ctx.decrypt_batch(LWECiphertext.deserialize(c, self.params)).astype(np.uint8) 
+        """Decrypt chunked ciphertext (safe JSON path)."""
+        import json
+        payload = json.loads(ciphertext.decode())
+        dec_chunks = [self._ctx.decrypt_batch(LWECiphertext.deserialize(bytes.fromhex(c), self.params)).astype(np.uint8) 
                      for c in payload['chunks']]
         return np.concatenate(dec_chunks).tobytes()[:payload['len']]
+
+def generate_key(path: str, security_level: int = 128):
+    """Standalone utility to generate a new TensorGuard N2HE key."""
+    params = N2HEParams(security_bits=security_level)
+    ctx = N2HEContext(params)
+    ctx.generate_keys()
+    ctx.save_key(path)
+    print(f"Successfully generated N2HE {security_level}-bit key at: {path}")
