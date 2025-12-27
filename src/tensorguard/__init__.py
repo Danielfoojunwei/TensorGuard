@@ -1,38 +1,22 @@
 """
-TensorGuard: Privacy-Preserving VLA Fine-Tuning for Humanoid Robotics
-
-Plug-and-play SDK for Robotics System Integrators to fine-tune
-Vision-Language-Action models without exposing proprietary data.
+TensorGuard: Privacy-Preserving VLA Fine-Tuning SDK
 """
 
-__version__ = "1.0.0"
-__author__ = "Dynamical.ai"
+__version__ = "1.1.0"
+__author__ = "Daniel Foo"
 
-from .edge_client import EdgeClient, create_client
-from .structures import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
-from .adapters import VLAAdapter
-
-from .n2he import (
-    N2HEContext,
-    N2HEParams,
-    N2HE_128,
-    N2HE_192,
-    LWECiphertext,
-)
+from .core.client import EdgeClient, create_client
+from .api.schemas import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
+from .core.adapters import VLAAdapter
+from .utils.config import settings
 
 __all__ = [
-    # Edge Client
     "EdgeClient",
-    "ShieldConfig", 
-    "VLAAdapter",
+    "create_client",
+    "ShieldConfig",
     "Demonstration",
     "SubmissionReceipt",
     "ClientStatus",
-    "create_client",
-    # N2HE
-    "N2HEContext",
-    "N2HEParams",
-    "N2HE_128",
-    "N2HE_192",
-    "LWECiphertext",
+    "VLAAdapter",
+    "settings",
 ]
