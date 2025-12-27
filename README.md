@@ -121,5 +121,5 @@ TensorGuard maintains a rigorous 100% pass verification suite:
 $env:PYTHONPATH="src"; python -m pytest tests/
 ```
 
-Created by **HintSight Technology & The Danielfoojunwei Team**.
-For enterprise integration, visit [tensor-crate.ai](https://tensor-crate.ai).
+Created by **HintSight Technology**.
+For inquiries reach out to @danielfoojunwei (Telegram), visit (https://www.hintsighttechnologies.com) for more information on our background. 
