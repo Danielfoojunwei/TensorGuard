@@ -66,10 +66,6 @@ Traditional federated learning (e.g., FedAvg) helps, but remains vulnerable to *
 
 TensorGuard is built upon the research of  the **MOAI (Module-Optimising Architecture for Non-Interactive Secure Transformer Inference)** by Linru Zhang1, Xiangning Wang, Jun Jie Sim, Zhicong Huang,Jiahao Zhong, Huaxiong Wang, Pu Duan, and Kwok-Yan Lam architecture and **(Efficient FHE-based Privacy-Enhanced Neural Network for Trustworthy AI-as-a-Service)** by Kwok-Yan Lam, Senior Member, IEEE, Xianhui Lu, Linru Zhang, Xiangning Wang, Huaxiong Wang, Si Qi Goh, pioneered at DTC (Digital Trust Centre), NTU.
 
-MOAI utilizes **N2HE (HEXL)**, a novel lattice-based cryptosystem that treats Differential Privacy noise not as a nuisance, but as the randomizer for the encryption scheme itself.
-- **Standard FHE**: Requires heavy noise generation ($100s$ of ms).
-- **N2HE**: Recycles the DP noise layer to secure the LWE (Learning With Errors) sample, reducing encryption overhead by **90%**.
-
 ### ✨ The Solution: TensorGuard v2.0
 
 TensorGuard enables **Secure Federated Mixture-of-Experts (FedMoE)**, ensuring robot fleets share *specialized learning* but not *raw data*. By combining:
