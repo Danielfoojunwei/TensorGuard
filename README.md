@@ -489,3 +489,235 @@ Licensed under **Apache 2.0**. See `LICENSE` for full terms.
 
 © 2025 TensorGuard by Daniel Foo Jun Wei. Production Ready for Secure Post-Training at Scale.
 
+---
+
+## 📚 14. Engineering Deep-Dive & FAQ
+
+For a complete technical breakdown of all subsystems, see **[docs/ENGINEERING_DEEP_DIVE.md](docs/ENGINEERING_DEEP_DIVE.md)**.
+
+### Frequently Asked Questions
+
+<details>
+<summary><strong>🔐 Q1: How does TensorGuard ensure my robot data stays private?</strong></summary>
+
+**A:** TensorGuard uses a multi-layer privacy approach:
+
+1. **Local Processing**: Raw demonstration data never leaves your robot. Only compressed, encrypted gradients are transmitted.
+
+2. **N2HE Encryption**: Gradients are encrypted using Learning With Errors (LWE) lattice-based cryptography. The server aggregates encrypted values using **homomorphic addition**—it can sum ciphertexts without ever decrypting them.
+
+3. **Differential Privacy**: Skellam noise is added to gradients, providing (ε, δ)-DP guarantees. Even if an attacker intercepts the encrypted gradients, the noise masks individual contributions.
+
+4. **Sparsification**: Only the top 1-5% of gradient values are transmitted, further reducing information leakage.
+
+**Result**: The aggregation server only ever sees encrypted, noisy, sparse gradients—never raw observations or actions.
+</details>
+
+<details>
+<summary><strong>📡 Q2: How much bandwidth does TensorGuard use?</strong></summary>
+
+**A:** TensorGuard achieves **50x compression** compared to naive gradient transmission:
+
+| Stage | Compression Ratio | Description |
+|:------|:------------------|:------------|
+| Raw Gradients | 1x | ~15 MB for Pi0 LoRA |
+| After Sparsification | 100x | Top 1% values only |
+| After Quantization | 4x | 32-bit → 8-bit |
+| After gzip | 2x | Dictionary compression |
+| **Final Package** | **~300 KB** | Ready for LTE/Satellite |
+
+This makes TensorGuard viable for bandwidth-constrained deployments like agricultural robots, mining equipment, or satellite-connected vessels.
+</details>
+
+<details>
+<summary><strong>🧠 Q3: What is FedMoE and why does it matter?</strong></summary>
+
+**A:** **FedMoE (Federated Mixture-of-Experts)** is our architecture for multi-task federated learning.
+
+**Problem**: Standard FedAvg assumes all robots are doing similar tasks. But a picking robot and a welding robot should update different parts of the model.
+
+**Solution**: FedMoE routes gradients to task-specific **expert blocks**:
+
+```
+Task: "Pick up the blue block"
+   → visual_primary (42%)  ← Objects, shapes
+   → language_semantic (25%) ← "pick", "blue"
+   → manipulation_grasp (18%) ← Grasping
+   → visual_aux (15%)       ← Color
+```
+
+The server aggregates each expert separately, preventing parameter interference between dissimilar tasks.
+
+**Configuration**: See [docs/EXPERT_ROUTING.md](docs/EXPERT_ROUTING.md) for customization.
+</details>
+
+<details>
+<summary><strong>🔑 Q4: How do I set up HSM/KMS for enterprise key management?</strong></summary>
+
+**A:** TensorGuard supports three cloud KMS providers via the dashboard UI:
+
+**Option 1: AWS KMS**
+1. Create a CMK in AWS KMS Console
+2. Dashboard → Settings → KMS Provider → AWS KMS
+3. Enter CMK ARN: `arn:aws:kms:us-east-1:123456:key/abcd-1234`
+4. Click "Test Connection" → Save
+
+**Option 2: Azure Key Vault**
+1. Create Key Vault + RSA key in Azure Portal
+2. Dashboard → Settings → Azure Key Vault
+3. Enter Vault URL: `https://myvault.vault.azure.net`
+4. Enter Key Name: `tensorguard-key`
+
+**Option 3: GCP Cloud KMS**
+1. Create Keyring + CryptoKey in GCP Console
+2. Dashboard → Settings → GCP Cloud KMS
+3. Enter Project, Location, Keyring, Key
+
+For code-based configuration, see [docs/HSM_INTEGRATION.md](docs/HSM_INTEGRATION.md).
+</details>
+
+<details>
+<summary><strong>⚡ Q5: What are the hardware requirements?</strong></summary>
+
+**A:** 
+
+| Component | Minimum | Recommended |
+|:----------|:--------|:------------|
+| **Robot Edge** | | |
+| CPU | 4 cores | 8+ cores |
+| RAM | 8 GB | 16+ GB |
+| GPU | None | NVIDIA with CUDA |
+| Storage | 10 GB | 50 GB |
+| **Aggregation Server** | | |
+| CPU | 8 cores | 32+ cores |
+| RAM | 32 GB | 128 GB |
+| Network | 100 Mbps | 1 Gbps |
+
+**Note**: The encryption/decryption operations are CPU-bound. For maximum throughput on the aggregator, use a machine with many cores and AVX-512 support.
+</details>
+
+<details>
+<summary><strong>🛡️ Q6: Is TensorGuard post-quantum secure?</strong></summary>
+
+**A:** **Yes.** TensorGuard uses **LWE (Learning With Errors)** encryption, which is:
+
+1. A **NIST PQC finalist** algorithm family
+2. **Resistant to Shor's algorithm** (unlike RSA/ECDSA)
+3. Based on the hardness of finding short vectors in lattices
+
+Our default parameters (n=1024, q=2^32) provide **128-bit post-quantum security**, equivalent to AES-128 against a quantum adversary.
+
+For higher security (SOC2 Type II, HIPAA), use `security_level=192`.
+</details>
+
+<details>
+<summary><strong>🔄 Q7: How does error feedback work?</strong></summary>
+
+**A:** Error feedback ensures no gradient information is lost due to sparsification:
+
+```python
+# Round N
+clipped = clipper.clip(gradients)
+sparse = sparsifier.sparsify(clipped)  # Keep top 1%
+residual = clipped - sparse            # The 99% we dropped
+
+# Round N+1
+gradients += residual                   # Add back what we dropped
+```
+
+**Memory Pruning (v2.0)**: Residuals for parameters not seen in 10 rounds are automatically discarded to prevent unbounded memory growth.
+</details>
+
+<details>
+<summary><strong>📊 Q8: How do I monitor training progress?</strong></summary>
+
+**A:** Use the **TensorGuard Dashboard**:
+
+```bash
+tensorguard dashboard --port 8099
+# Open http://localhost:8099
+```
+
+**Overview Tab**:
+- Encrypted submissions count
+- Bandwidth saved (MB)
+- Latency breakdown (Train/Compress/Encrypt)
+- Expert weight distribution
+
+**Settings Tab**:
+- Adjust ε (privacy budget)
+- LoRA rank
+- Sparsity percentage
+- KMS/HSM configuration
+
+**Usage Tab**:
+- Historical bandwidth analytics
+- Aggregation success rates
+
+**Versions Tab**:
+- Model version history
+- Quality metrics per deployment
+</details>
+
+<details>
+<summary><strong>🚨 Q9: How does Byzantine attack protection work?</strong></summary>
+
+**A:** TensorGuard uses **Median Absolute Deviation (MAD)** for outlier detection:
+
+```python
+# For each gradient dimension:
+median = np.median(all_client_gradients)
+mad = np.median(np.abs(gradients - median))
+
+# Reject if:
+if np.abs(gradient - median) > 3 * mad:
+    reject_as_outlier()
+```
+
+**Protection Against**:
+- Label-flipping attacks
+- Gradient scaling attacks
+- Byzantine clients sending arbitrary values
+
+**Quorum Enforcement**: Aggregation requires at least 2 valid clients. Single-client updates are rejected.
+</details>
+
+<details>
+<summary><strong>🔧 Q10: How do I customize expert routing for my domain?</strong></summary>
+
+**A:** Create a custom `expert_config.yaml`:
+
+```yaml
+experts:
+  surgical_precision:
+    blocks: [10, 11]
+    keywords:
+      - incision
+      - suture
+      - vessel
+      - tissue
+    gate_threshold: 0.20
+
+  haptic_feedback:
+    blocks: [12, 13]
+    keywords:
+      - force
+      - resistance
+      - compliance
+```
+
+Load in Python:
+```python
+adapter = MoEAdapter()
+adapter.expert_prototypes["surgical_precision"] = ["incision", "suture", ...]
+adapter.routing["surgical_precision"] = [10, 11]
+```
+
+See [docs/EXPERT_ROUTING.md](docs/EXPERT_ROUTING.md) for advanced learned gating.
+</details>
+
+---
+
+*Have more questions? Open an issue on GitHub or email tensorguard@example.com*
+
+
