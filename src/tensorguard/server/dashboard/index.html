@@ -34,7 +34,7 @@
             </ul>
             <div class="sidebar-footer">
                 <div id="simd-badge" class="simd-badge hidden">SIMD</div>
-                <p>v1.4.0-Enterprise</p>
+                <p>v2.0.0-FedMoE</p>
             </div>
         </nav>
 
@@ -102,29 +102,15 @@
                         </div>
                     </div>
 
-                    <!-- MoI Section -->
+                    <!-- MoI Section (v2.0) -->
                     <div class="card experts-card">
-                        <h3>Mixture of Intelligence Experts</h3>
-                        <div class="experts-grid">
-                            <div class="expert-item" id="expert-visual">
-                                <span class="icon">👁️</span>
-                                <span class="name">Visual</span>
-                                <span class="weight" id="weight-visual">1.0x</span>
-                            </div>
-                            <div class="expert-item" id="expert-language">
-                                <span class="icon">📝</span>
-                                <span class="name">Language</span>
-                                <span class="weight" id="weight-language">0.8x</span>
-                            </div>
-                            <div class="expert-item" id="expert-aux">
-                                <span class="icon">🔧</span>
-                                <span class="name">Auxiliary</span>
-                                <span class="weight" id="weight-aux">1.2x</span>
-                            </div>
+                        <h3>Mixture of Intelligence (MoI)</h3>
+                        <div class="moi-grid" id="moi-grid">
+                            <div class="expert-placeholder">Analyzing task instructions...</div>
                         </div>
                         <div class="experts-explanation">
-                            <p>Resource weighting dynamically balances visual, semantic, and auxiliary experts based on
-                                current task complexity.</p>
+                            <p>Instruction-Aware Gating (IOSP) dynamically activates task-critical experts, minimizing
+                                parameter interference and stabilizing global convergence.</p>
                         </div>
                     </div>
 
@@ -186,6 +172,16 @@
                             <input type="range" id="set-sparsity" min="0.1" max="5.0" step="0.1" value="1.0"
                                 title="Grad Sparsity">
                             <span id="sparsity-val">1.0%</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="set-gating">Expert Gating Threshold</label>
+                            <input type="number" id="set-gating" value="0.15" step="0.01" min="0" max="1"
+                                title="Minimum relevance for expert activation">
+                        </div>
+                        <div class="setting-item">
+                            <label for="set-outlier">Outlier Sensitivity (MAD)</label>
+                            <input type="number" id="set-outlier" value="3.0" step="0.5" min="1.0" max="10.0"
+                                title="MAD multiplier for Byzantine rejection">
                         </div>
                         <div class="setting-item">
                             <label>Security Level</label>

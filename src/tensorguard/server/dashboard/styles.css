@@ -295,51 +295,51 @@ header {
     color: var(--text-main);
 }
 
-/* MoI Card */
-.experts-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+/* MoI Expert Progress Bars (v2.0) */
+.moi-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 15px;
 }
 
-.expert-item {
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    text-align: center;
-    transition: transform 0.2s;
+.expert-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.expert-item:hover {
-    transform: scale(1.05);
-}
-
-.expert-item .icon {
-    font-size: 1.4rem;
-    display: block;
-    margin-bottom: 4px;
-}
-
-.expert-item .name {
-    font-size: 0.7rem;
+.expert-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: var(--text-muted);
+    letter-spacing: 0.05em;
 }
 
-.expert-item .weight {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--primary);
-    margin-top: 4px;
+.expert-bar-bg {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.expert-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    box-shadow: 0 0 10px var(--primary-glow);
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .experts-explanation {
     font-size: 0.75rem;
     color: var(--text-muted);
-    margin-top: 16px;
+    margin-top: 20px;
     font-style: italic;
-    line-height: 1.4;
+    line-height: 1.5;
+    opacity: 0.8;
 }
 
 /* Security Card */

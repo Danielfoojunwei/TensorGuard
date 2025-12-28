@@ -5,9 +5,9 @@ from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 
 from ..api.schemas import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
-from ..core.adapters import VLAAdapter
+from ..core.adapters import VLAAdapter, MoEAdapter
 from ..core.crypto import N2HEEncryptor, CryptographyError
-from ..core.pipeline import GradientClipper, SemanticSparsifier, APHECompressor, QualityMonitor
+from ..core.pipeline import GradientClipper, ThresholdSparsifier, ExpertGater, APHECompressor, QualityMonitor
 from ..utils.logging import get_logger
 from ..utils.exceptions import ValidationError, CommunicationError
 from ..utils.config import settings
@@ -69,8 +69,10 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         self.observability = ObservabilityCollector() if enable_observability else None
         
         # Initialize pipeline components
+        # Initialize v2.0 pipeline components (Expert-Driven)
         self._clipper = GradientClipper(self.dp_profile.clipping_norm)
-        self._sparsifier = SemanticSparsifier(self.config.sparsity)
+        self._gater = ExpertGater(gate_threshold=0.15)
+        self._sparsifier = ThresholdSparsifier(threshold=0.001)
         self._compressor = APHECompressor(self.config.compression_ratio)
         self._encryptor = N2HEEncryptor(self.config.key_path, self.config.security_level)
         self._quality_monitor = QualityMonitor()
@@ -106,7 +108,7 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
             pending_submissions=len(self._current_round_demos),
             total_submissions=self._total_submissions,
             privacy_budget_remaining=max(0.0, self.config.dp_epsilon - self._privacy_budget_used),
-            last_model_version="v1.3.0",
+            last_model_version="v2.0.0-fedmoe",
             connection_status="online"
         )
 
@@ -131,11 +133,26 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         try:
             for demo in self._current_round_demos:
                 try:
-                    experts = self._adapter.compute_expert_gradients(demo)
-                    for exp_name, grads in experts.items():
-                        weight = {"visual": 1.0, "language": 0.8, "auxiliary": 1.2}.get(exp_name, 1.0)
-                        for k, v in grads.items():
-                            combined_grads[k] = combined_grads.get(k, 0) + v * weight
+                    # v2.0 EDA: Expert-Driven Aggregation
+                    res = self._adapter.compute_expert_gradients(demo)
+                    
+                    # Handle both v1 (dict) and v2 (tuple with gate_weights) formats
+                    if isinstance(res, tuple):
+                        experts, gate_weights = res
+                        self._current_expert_weights = gate_weights
+                        # Expert Gating (v2.0 feature)
+                        gated_grads = self._gater.gate(experts, gate_weights)
+                        for k, v in gated_grads.items():
+                            combined_grads[k] = combined_grads.get(k, 0) + v
+                    else:
+                        # Legacy/Standard Adapter fallback
+                        experts = res
+                        for exp_name, grads in experts.items():
+                            # Mock weighting for legacy experts
+                            weight = {"visual": 1.0, "language": 0.8, "auxiliary": 1.2}.get(exp_name, 1.0)
+                            for k, v in grads.items():
+                                combined_grads[k] = combined_grads.get(k, 0) + v
+                    
                     processed_demos.append(demo)
                 except Exception as e:
                     logger.error(f"Failed to process demonstration: {e}")
@@ -203,6 +220,7 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
                 "sparsity": self.config.sparsity,
                 "size": len(encrypted)
             },
+            expert_weights=getattr(self, '_current_expert_weights', {}),
             training_meta=TrainingMetadata(
                 steps=demo_count,
                 learning_rate=1e-4,
@@ -229,6 +247,16 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
                 ModelQualityMetrics(success_rate=1.0, kl_divergence=quality_mse, update_norm=float(np.max(grad_norms))),
                 self._current_round
             )
+            if hasattr(self, '_current_expert_weights'):
+                self.observability.record_expert_weights(self._current_expert_weights, self._current_round)
+            
+            # Graceful Degradation: Adaptive Sparsification
+            # If total round trip latency > 1s, increase threshold to save bandwidth
+            if latency.total_ms() > 1000:
+                self._sparsifier.threshold *= 1.5
+                logger.info(f"Graceful Degradation: Increasing sparsity threshold to {self._sparsifier.threshold:.4f}")
+            elif latency.total_ms() < 300:
+                self._sparsifier.threshold = max(0.001, self._sparsifier.threshold * 0.8)
 
         self._total_submissions += 1
         self._privacy_budget_used = self.dp_profile.epsilon_consumed

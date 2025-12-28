@@ -34,16 +34,15 @@ const dom = {
     viewName: document.getElementById('current-view-name'),
     navLinks: document.querySelectorAll('.nav-links li'),
     views: document.querySelectorAll('.view-container'),
-    weights: {
-        visual: document.getElementById('weight-visual'),
-        language: document.getElementById('weight-language'),
-        auxiliary: document.getElementById('weight-aux')
-    },
+    weights: {}, // Legacy weights removed
+    moiGrid: document.getElementById('moi-grid'),
     settings: {
         epsilon: document.getElementById('set-epsilon'),
         rank: document.getElementById('set-rank'),
         sparsity: document.getElementById('set-sparsity'),
         sparsityVal: document.getElementById('sparsity-val'),
+        gating: document.getElementById('set-gating'),
+        outlier: document.getElementById('set-outlier'),
         btnSave: document.getElementById('btn-save-settings')
     },
     versionsBody: document.getElementById('version-history-body')
@@ -115,11 +114,27 @@ async function updateStatus() {
         if (data.simd) dom.simdBadge.classList.remove('hidden');
         else dom.simdBadge.classList.add('hidden');
 
-        // Experts
-        if (data.experts) {
-            for (const [key, weight] of Object.entries(data.experts)) {
-                if (dom.weights[key]) dom.weights[key].innerText = `${weight}x`;
-            }
+        // Experts (FedMoE v2.0 MoI)
+        if (data.telemetry && data.telemetry.moi_distribution && dom.moiGrid) {
+            const weights = data.telemetry.moi_distribution;
+            const expertIcons = {
+                'visual_primary': '👁️',
+                'visual_aux': '🎨',
+                'language_semantic': '📝',
+                'manipulation_grasp': '🦾'
+            };
+
+            dom.moiGrid.innerHTML = Object.entries(weights).map(([expert, weight]) => `
+                <div class="expert-stat">
+                    <div class="expert-label">
+                        <span>${expertIcons[expert] || '🧠'} ${expert.replace('_', ' ').toUpperCase()}</span>
+                        <span>${(weight * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="expert-bar-bg">
+                        <div class="expert-bar-fill" style="width: ${weight * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Versions Tab
@@ -136,6 +151,8 @@ async function updateStatus() {
 
         // Sync Settings from server if not touched
         if (!dom.settings.epsilon.matches(':focus')) dom.settings.epsilon.value = data.settings?.epsilon || 1.0;
+        if (!dom.settings.gating.matches(':focus')) dom.settings.gating.value = data.settings?.gating_threshold || 0.15;
+        if (!dom.settings.outlier.matches(':focus')) dom.settings.outlier.value = data.settings?.outlier_mad_threshold || 3.0;
 
         // State Sync
         if (data.running !== isRunning) {
@@ -146,7 +163,11 @@ async function updateStatus() {
     } catch (e) {
         console.error("Status fetch failed", e);
         dom.connection.className = 'status-badge disconnected';
-        dom.connText.innerText = 'Server Error';
+        dom.connText.innerText = 'Sync Error (Reconnecting...)';
+
+        // Clear telemetry on persistent failure
+        if (dom.submissionCount) dom.submissionCount.innerText = "---";
+        if (dom.savedMb) dom.savedMb.innerText = "---";
     }
 }
 
@@ -169,7 +190,9 @@ dom.settings.btnSave.onclick = async () => {
     const s = {
         epsilon: parseFloat(dom.settings.epsilon.value),
         rank: parseInt(dom.settings.rank.value),
-        sparsity: parseFloat(dom.settings.sparsity.value)
+        sparsity: parseFloat(dom.settings.sparsity.value),
+        gating_threshold: parseFloat(dom.settings.gating.value),
+        outlier_mad_threshold: parseFloat(dom.settings.outlier.value)
     };
     try {
         const res = await api.updateSettings(s);

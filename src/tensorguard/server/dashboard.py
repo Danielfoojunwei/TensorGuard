@@ -23,7 +23,9 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
     custom_settings: dict = {
         "epsilon": settings.DP_EPSILON,
         "rank": 32,
-        "sparsity": 1.0
+        "sparsity": 1.0,
+        "gating_threshold": 0.15,
+        "outlier_mad_threshold": 3.0
     }
 
     def do_GET(self):
@@ -79,6 +81,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             "compression": {"ratio": 0.0, "compressed_bytes": 0, "original_bytes": 0},
             "privacy": {"epsilon_consumed": 0.0, "epsilon_budget": settings.DP_EPSILON},
             "quality": {"success_rate": 0.0, "average_reward": 0.0, "model_quality_mse": 0.0},
+            "moi": {"weights": {}},
             "count": 0
         }
         
@@ -87,7 +90,6 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         if os.path.exists(metrics_path):
             try:
                 with open(metrics_path, "r") as f:
-                    # Efficiently read last lines
                     lines = f.readlines()[-50:]
                     for line in lines:
                         try:
@@ -102,7 +104,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                                 metrics["privacy"] = record
                             elif rtype == "quality":
                                 metrics["quality"] = record
-                                metrics["quality"]["model_quality_mse"] = record.get("update_norm", 0.0) # Proxy
+                            elif rtype == "moi":
+                                metrics["moi"] = record
                             
                             metrics["count"] += 1
                         except json.JSONDecodeError:
@@ -127,21 +130,21 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         return {
             "running": self.simulation_active or (metrics["count"] > 0),
             "submissions": metrics["count"] // 4, 
-            "privacy_budget": f"{metrics['privacy']['epsilon_remaining']:.2f}" if 'epsilon_remaining' in metrics['privacy'] else f"{self.custom_settings['epsilon']:.2f}",
-            "budget_percent": int(metrics['privacy']['consumption_rate'] * 100) if 'consumption_rate' in metrics['privacy'] else 0,
+            "privacy_budget": f"{metrics['privacy'].get('epsilon_remaining', self.custom_settings['epsilon']):.2f}",
+            "budget_percent": int(metrics['privacy'].get('consumption_rate', 0) * 100),
             "connection": "connected" if metrics["count"] > 0 else "waiting",
             "security": f"{settings.SECURITY_LEVEL}-bit Post-Quantum (N2HE)",
             "key_path": settings.KEY_PATH,
             "key_exists": os.path.exists(settings.KEY_PATH),
             "simd": True, 
-            "experts": {"visual": 1.0, "language": 0.8, "auxiliary": 1.2},
             "telemetry": {
                 "latency_train": metrics["latency"].get("train_ms", 0),
                 "latency_compress": metrics["latency"].get("compress_ms", 0),
                 "latency_encrypt": metrics["latency"].get("encrypt_ms", 0),
                 "compression_ratio": metrics["compression"].get("ratio", 0),
-                "quality_mse": metrics["quality"].get("model_quality_mse", 0),
-                "bandwidth_saved_mb": bandwidth_saved
+                "quality_mse": metrics["quality"].get("kl_divergence", 0),
+                "bandwidth_saved_mb": bandwidth_saved,
+                "moi_distribution": metrics["moi"].get("weights", {})
             },
             "audit": audit_log,
             "settings": self.custom_settings,

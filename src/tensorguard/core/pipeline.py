@@ -22,16 +22,57 @@ class GradientClipper:
         clip_coef = min(self.max_norm / (total_norm + 1e-6), 1.0)
         return {k: v * clip_coef for k, v in gradients.items()}
 
-class SemanticSparsifier:
+class ExpertGater:
     """
-    Semantic-Aware Top-K Sparsification.
-    Prioritizes Attention layers to maintain visual reasoning capabilities.
+    Expert-Driven Gating (v2.0).
+    Based on instruction relevance (IOSP) instead of raw magnitude.
+    Addresses parameter interference in heterogeneous robot fleets.
+    """
+    def __init__(self, gate_threshold: float = 0.1):
+        self.gate_threshold = gate_threshold
+
+    def gate(self, expert_grads: Dict[str, Dict[str, np.ndarray]], gate_weights: Dict[str, float]) -> Dict[str, np.ndarray]:
+        combined = {}
+        if not expert_grads or not gate_weights:
+            return combined
+            
+        for expert, grads in expert_grads.items():
+            weight = gate_weights.get(expert, 0.0)
+            if weight > self.gate_threshold:
+                for k, v in grads.items():
+                    combined[k] = combined.get(k, 0) + v
+        return combined
+
+class ThresholdSparsifier:
+    """
+    Threshold-based Sparsification.
+    Maintains O(c) error accumulation (Canini et al., 2021), 
+    avoiding the O(c^4) blowup of Top-K.
+    """
+    def __init__(self, threshold: float = 0.001):
+        self.threshold = threshold
+    
+    def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        result = {}
+        for name, grad in gradients.items():
+            # Keep only gradients exceeding the learnable/fixed threshold
+            mask = np.abs(grad) > self.threshold
+            sparse = np.zeros_like(grad)
+            sparse[mask] = grad[mask]
+            result[name] = sparse
+        return result
+
+class LegacyMagnitudeSparsifier:
+    """
+    [LEGACY] Top-K Sparsification.
+    Deprecated in v2.0 due to O(c^4) error accumulation and index-leakage risks.
     """
     def __init__(self, k_ratio: float = 0.01):
         self.k_ratio = k_ratio
         self.attn_boost = 2.0
     
     def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        # Implementation remains for backward compatibility
         result = {}
         for name, grad in gradients.items():
             flat = grad.flatten()

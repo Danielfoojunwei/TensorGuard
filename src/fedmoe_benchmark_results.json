@@ -1,0 +1,16 @@
+[
+  {
+    "method": "Legacy (Top-K)",
+    "avg_success_rate": 0.8026713067659432,
+    "avg_latency_ms": 259.99040603637695,
+    "total_bandwidth_kb": 246007.5576171875,
+    "task_diversity_score": 1.0
+  },
+  {
+    "method": "FedMoE (v2.0)",
+    "avg_success_rate": 0.9459619139996439,
+    "avg_latency_ms": 252.67252922058105,
+    "total_bandwidth_kb": 246007.5595703125,
+    "task_diversity_score": 1.0
+  }
+]

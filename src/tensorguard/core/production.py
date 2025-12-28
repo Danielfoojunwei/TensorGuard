@@ -212,9 +212,12 @@ class UpdatePackage:
 
     # Safety statistics
     safety_stats: SafetyStatistics = field(default_factory=SafetyStatistics)
+    
+    # FedMoE Metadata (v2.0)
+    expert_weights: Dict[str, float] = field(default_factory=dict)
 
     # Compatibility
-    tensorguard_version: str = "1.3.0"
+    tensorguard_version: str = "2.0.0-fedmoe"
 
     def serialize(self) -> bytes:
         """Serialize to bytes for transmission"""
@@ -233,6 +236,7 @@ class UpdatePackage:
             "compression_metadata": self.compression_metadata,
             "training_meta": asdict(self.training_meta) if self.training_meta else None,
             "safety_stats": asdict(self.safety_stats),
+            "expert_weights": self.expert_weights,
             "tensorguard_version": self.tensorguard_version
         }
 
@@ -308,7 +312,8 @@ class UpdatePackage:
             base_model_fingerprint=package_dict["base_model_fingerprint"],
             adapter_schema_version=package_dict["adapter_schema_version"],
             compression_metadata=package_dict["compression_metadata"],
-            tensorguard_version=package_dict["tensorguard_version"],
+            tensorguard_version=package_dict.get("tensorguard_version", "1.0.0"),
+            expert_weights=package_dict.get("expert_weights", {}),
             delta_tensors=delta_tensors
         )
 
@@ -864,6 +869,17 @@ class ObservabilityCollector:
             "is_outlier": quality.is_outlier
         }
         self._write_metric(metric)
+
+    def record_expert_weights(self, weights: Dict[str, float], round_number: int):
+        """Record MoI expert distribution (FedMoE v2.0)"""
+        metric = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "type": "moi",
+            "round": round_number,
+            "weights": weights
+        }
+        self._write_metric(metric)
+        logger.info(f"MoI Distribution: {weights}")
 
     def record_alert(self, alert_type: str, message: str, severity: str = "warning"):
         """Record an alert event"""

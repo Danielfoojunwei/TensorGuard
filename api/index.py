@@ -21,14 +21,13 @@ class handler(BaseHTTPRequestHandler):
             "key_path": "keys/demo_key.npy",
             "key_exists": True,
             "simd": True, 
-            "experts": {"visual": 1.0, "language": 0.8, "auxiliary": 1.2},
+            "experts": {"visual_primary": 1.0, "visual_aux": 0.8, "language_semantic": 0.9, "manipulation_grasp": 1.1},
             "telemetry": {
                 "latency_train": 120.5 + random.uniform(-5, 5),
                 "latency_compress": 15.2 + random.uniform(-2, 2),
-                "latency_encrypt": 18.4 + random.uniform(-2, 2),
-                "compression_ratio": 32.0,
-                "quality_mse": 0.0012 + random.uniform(-0.0001, 0.0001),
-                "bandwidth_saved_mb": 15.2
+                "latency_encrypt": 16.0 + random.uniform(-2, 2), # Skellam speed
+                "compression_ratio": 31.2,
+                "bandwidth_saved_mb": 42.5
             },
             "audit": [
                 {"timestamp": datetime.utcnow().isoformat(), "event": "SESSION_STARTED", "key_id": "demo_v1"},
