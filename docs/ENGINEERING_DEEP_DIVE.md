@@ -27,7 +27,7 @@ TensorGuard is a **privacy-preserving federated learning SDK** designed for fine
 │                         USER INTERFACE LAYER                        │
 │  ┌─────────────┐  ┌─────────────────────┐  ┌────────────────────┐  │
 │  │   CLI       │  │   Dashboard (Web)   │  │   REST API         │  │
-│  │ tensorguard │  │   :8099 / :8005     │  │   /api/status...   │  │
+│  │ tensorguard │  │   :8000             │  │   /api/status...   │  │
 │  └──────┬──────┘  └─────────┬───────────┘  └─────────┬──────────┘  │
 ├─────────┴───────────────────┴─────────────────────────┴─────────────┤
 │                          SDK CORE LAYER                             │
@@ -134,7 +134,7 @@ The privacy pipeline transforms raw gradients into bandwidth-efficient, privacy-
 ```
 Raw Gradients → Clipping → Sparsification → Compression → Encryption
       ↓              ↓             ↓               ↓            ↓
-  Dict[str,      L2 Norm       Top-K         msgpack+       LWE
+  Dict[str,      L2 Norm       Rand-K        msgpack+       LWE
    ndarray]       ≤ 1.0        0.1-5%         gzip        Ciphertext
 ```
 
@@ -296,7 +296,8 @@ stateDiagram-v2
 | Component | Responsibility |
 |:----------|:---------------|
 | `_clipper` | L2 norm clipping |
-| `_sparsifier` | Top-K sparsification |
+| `_gater` | Expert-driven gating (IOSP) |
+| `_sparsifier` | Random (Rand-K) sparsification |
 | `_compressor` | APHE quantization + gzip |
 | `_encryptor` | N2HE encryption |
 | `_quality_monitor` | Compression quality (MSE) |

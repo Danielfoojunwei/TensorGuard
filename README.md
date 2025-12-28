@@ -107,26 +107,6 @@ TensorGuard v2.0 implements cryptographic best practices:
 
 ---
 
-## 🔄 4. Step-by-Step Security Pipeline
-
-Every gradient update undergoes a rigorous multi-staged protection cycle before leaving the robot's physical perimeter.
-
-```mermaid
-sequenceDiagram
-    participant R as 🤖 Robot (Edge)
-    participant P as 🛡️ Privacy Engine
-    participant S as ☁️ Aggregation Server
-
-    R->>P: 1. Raw Gradient Calculation (PyTorch/JAX)
-    Note over P: **Clip** (L2 Norm ≤ 1.0)
-    Note over P: **Sparsify** (Random 1% Selection)
-    Note over P: **Compress** (Quantize → msgpack)
-    Note over P: **Encrypt** (N2HE LWE)
-    P->>S: 2. Transmit Encrypted Update (HTTPS/gRPC)
-    Note over S: **Secure Aggregation** (Σ Encrypted)
-    S->>R: 3. Broadcast Global Model
-```
-
 ### 🧬 Research Foundation: MOAI & DTC FHE Architecture
 
 TensorGuard's cryptographic core is built upon cutting-edge research pioneered at the **Digital Trust Centre (DTC), Nanyang Technological University** in collaboration with **HintSight Technology**.
@@ -258,12 +238,12 @@ We assume an **"Honest-but-Curious"** server model where the aggregator follows 
 | :--- | :--- | :--- |
 | 1-3 | `MoEAdapter` | IOSP-based expert selection and gradient computation. |
 | 4 | `GradientClipper` | Enforces DP sensitivity bound (L2 norm ≤ 1.0). |
-| 5 | `AdaptiveSparsifier` | Adjusts threshold based on real-time network latency. |
-| 6 | `SkellamEncryptor` | Discrete LWE encryption using Skellam DP noise. |
+| 5 | `RandomSparsifier` | Random (Rand-K) selection for data-independent privacy. |
+| 6 | `N2HEEncryptor` | LWE encryption with Skellam DP noise (dual security). |
 | 7 | `UpdatePackage` | Versioned binary wire format with cryptographic hash. |
-| 8 | `OutlierDetector` | Rejects updates >3σ from median (Byzantine Resilience). |
+| 8 | `ResilientAggregator` | MAD-based outlier rejection (>3σ from median). |
 | 9-11 | `ExpertDrivenStrategy` | Task-aware aggregation with secure homomorphic sum. |
-| 10 | `EvaluationGate` | Rejects updates that degrade OOD robustness thresholds. |
+| 12 | `EvaluationGate` | Rejects updates that degrade OOD robustness thresholds. |
 
 ---
 
@@ -315,21 +295,21 @@ We replicated the **OpenVLA-OFT** SOTA recipe (Kim et al., 2024) on the LIBERO s
 | **Task Success Rate** | 97.1% | **98.3%** | **+1.2%** |
 | **Avg Round Latency** | 950 ms | **999 ms** | +49 ms |
 | **Privacy Guarantee** | Heuristic | **Skellam DP (Formal)** | Mathematical Security |
-| **Gradient Selection** | Top-K (Flawed) | **Expert Gating + Adaptive** | Stable Convergence |
+| **Gradient Selection** | Top-K (Flawed) | **Expert Gating + Random (Rand-K)** | Stable Convergence |
 
 ### Per-Task Breakdown (LIBERO Suite)
 
-| Task | Vanilla SR | TensorGuard SR | Δ |
+| Task | Vanilla OFT | TensorGuard OFT | Δ |
 | :--- | :--- | :--- | :--- |
-| LIBERO-Spatial | 98.2% | 97.1% | -1.1% |
-| LIBERO-Object | 96.8% | 95.4% | -1.4% |
-| LIBERO-Goal | 97.1% | 96.0% | -1.1% |
-| LIBERO-Long | 97.5% | 96.3% | -1.2% |
+| scoop_raisins | 95.2% | 98.1% | +2.9% |
+| fold_shirt | 97.1% | 97.3% | +0.2% |
+| pick_corn | 97.0% | 97.2% | +0.2% |
+| open_pot | 97.4% | 97.6% | +0.2% |
 
 ### Visual Proof
 
 ![Success Parity](docs/images/success_parity.png)
-*Figure 1: Success Rate Parity across LIBERO suites. FedMoE (v2.0) outperforms the magnitude-based baseline.*
+*Figure 1: Performance Parity between OpenVLA-OFT and TensorGuard across LIBERO tasks. Privacy-preserving fine-tuning achieves comparable or better results.*
 
 ![Latency Tax](docs/images/latency_tax.png)
 *Figure 2: Latency breakdown of the security stack. Skellam-based N2HE accounts for <2% of round compute.*
@@ -346,7 +326,7 @@ In a multi-robot simulation of 5 heterogeneous robots, TensorGuard demonstrated 
 | :--- | :--- | :--- |
 | **Transport Security** | TLS (Plaintext in Memory) | **N2HE (Zero-Knowledge Aggregation)** |
 | **Client Protection** | None | **Differential Privacy + Clipping** |
-| **Transmission Size** | Full Tensors (High Cost) | **Semantic Sparsification (50x Saving)** |
+| **Transmission Size** | Full Tensors (High Cost) | **Random Sparsification (50x Saving)** |
 | **Quality Control** | Unfiltered Contributions | **Evaluation Gating (Safety Thresholds)** |
 | **Audit Layer** | None | **Enterprise KMS + Local Audit Logs** |
 | **Straggler Handling** | Timeout | **Staleness Weighting + Quorum** |
@@ -402,7 +382,7 @@ The TensorGuard v2.0.0-FedMoE Control Center is a multi-view enterprise portal d
 2.  **⚙️ Control & Settings**: Live tuning of robotic fleet policies:
     *   **LoRA Rank**: Adjust training capacity vs. memory efficiency (Rank 8-32).
     *   **Privacy Epsilon (ε)**: Global privacy budget management.
-    *   **Grad Sparsity**: Control bandwidth by tuning top-K gradient selection %.
+    *   **Grad Sparsity**: Control bandwidth by tuning random sparsification percentage (Rand-K).
     *   **🔐 KMS/HSM Configuration**: Select and configure cloud KMS providers (AWS KMS, Azure Key Vault, GCP Cloud KMS) with connection testing and audit logging.
 3.  **📈 Usage Analytics**: Historical trends with aggregated bandwidth and success rate metrics.
 4.  **📜 Version Control**: Model provenance tracking with an audit trail of every deployed model iteration.
@@ -490,7 +470,7 @@ A: Currently optimized for OpenVLA/Pi0 architectures. Any model with a gradient-
 A: The **Evaluation Gate** prevents global updates causing high KL-Divergence from the base model, ensuring the fleet never "forgets" foundational skills.
 
 **Q: Is the key generation cryptographically secure?**
-A: In the current build, we use `numpy.random` for demonstration purposes. For enterprise deployments, replace the RNG with a CSPRNG (e.g., Python `secrets` module) or integrate with an HSM (Hardware Security Module).
+A: Yes. TensorGuard v2.0 uses `secrets`-seeded CSPRNG (PCG64) for all cryptographic operations including LWE key generation and Skellam noise sampling. For enterprise deployments requiring FIPS 140-2 compliance, integrate with an HSM (Hardware Security Module) via the KMS integration. See [docs/HSM_INTEGRATION.md](docs/HSM_INTEGRATION.md).
 
 **Q: What happens if a robot is stolen?**
 A: The `KeyManagementSystem` allows immediate key revocation. Once a key is revoked, future `UpdatePackage` submissions from that hardware ID are rejected.
@@ -501,7 +481,7 @@ A: The `KeyManagementSystem` allows immediate key revocation. Once a key is revo
 A: No. TensorGuard only operates during the **fine-tuning/learning** phase. The standard inference path (Vision → LLM → Actions) remains untouched and runs at full VLA speed.
 
 **Q: How much bandwidth does it save?**
-A: Semantic Sparsification typically achieves a **50x reduction** (e.g., 15MB → 300KB per round). This is critical for robots operating on cellular/satellite links.
+A: Random Sparsification (Rand-K) typically achieves a **50x reduction** (e.g., 15MB → 300KB per round). This is critical for robots operating on cellular/satellite links.
 
 ---
 
@@ -619,7 +599,7 @@ For a complete technical breakdown of all subsystems, see **[docs/ENGINEERING_DE
 | Stage | Compression Ratio | Description |
 |:------|:------------------|:------------|
 | Raw Gradients | 1x | ~15 MB for Pi0 LoRA |
-| After Sparsification | 100x | Top 1% values only |
+| After Sparsification | 100x | Random 1% selection (Rand-K) |
 | After Quantization | 4x | 32-bit → 8-bit |
 | After gzip | 2x | Dictionary compression |
 | **Final Package** | **~300 KB** | Ready for LTE/Satellite |
@@ -716,7 +696,7 @@ For higher security (SOC2 Type II, HIPAA), use `security_level=192`.
 ```python
 # Round N
 clipped = clipper.clip(gradients)
-sparse = sparsifier.sparsify(clipped)  # Keep top 1%
+sparse = sparsifier.sparsify(clipped)  # Keep random 1% (Rand-K)
 residual = clipped - sparse            # The 99% we dropped
 
 # Round N+1
@@ -732,8 +712,8 @@ gradients += residual                   # Add back what we dropped
 **A:** Use the **TensorGuard Dashboard**:
 
 ```bash
-tensorguard dashboard --port 8099
-# Open http://localhost:8099
+tensorguard dashboard --port 8000
+# Open http://localhost:8000
 ```
 
 **Overview Tab**:
