@@ -1,5 +1,5 @@
-# TensorGuard SDK v2.0.0 (FedMoE Paradigm)
-### Expert-Driven Federated Learning for Humanoid Robotics
+# TensorGuard SDK v2.0.0
+### Securely Aggregate and Fine-tune your VLA for your own Robotics Deployment or R&D and keep your work Private and Proprietary.
 
 
 [![Python](https://img.shields.io/badge/Python-3.10+-green)](https://python.org)
