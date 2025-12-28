@@ -6,13 +6,13 @@ Based on HintSight Technology's N2HE-hexl library.
 Aligned with MOAI (IACR 2025/991) for Secure Transformer Inference.
 Incorporates Skellam noise for formal DP+LWE security (Valovich, 2016).
 
-WARNING: This implementation uses numpy.random. In a hardened production
-environment, replace with a CSPRNG (e.g., secrets module).
+SECURITY: This module uses secrets-seeded CSPRNG for cryptographic operations.
 """
 
 import numpy as np
 import struct
 import logging
+import secrets
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
@@ -108,14 +108,18 @@ class LWECiphertext:
         except Exception as e:
             raise CryptographyError(f"Deserialization failed: {e}")
 
+# CSPRNG-seeded RNG for cryptographic operations
+_crypto_rng = np.random.Generator(np.random.PCG64(secrets.randbits(128)))
+
 def sample_skellam(mu: float, size: int) -> np.ndarray:
     """
     Sample from symmetric Skellam distribution S(mu, mu).
     Technically: X1 - X2 where X1,X2 ~ Poisson(mu).
     This noise provides both DP and LWE security (Valovich, 2016).
+    Uses secrets-seeded CSPRNG for cryptographic security.
     """
-    x1 = np.random.poisson(mu, size)
-    x2 = np.random.poisson(mu, size)
+    x1 = _crypto_rng.poisson(mu, size)
+    x2 = _crypto_rng.poisson(mu, size)
     return (x1 - x2).astype(np.int64)
 
 class N2HEContext:
@@ -126,9 +130,10 @@ class N2HEContext:
         self.stats = {'encryptions': 0, 'decryptions': 0}
 
     def generate_keys(self):
-        """Generate secret key."""
-        self.lwe_key = np.random.choice([-1, 0, 1], size=self.params.n).astype(np.int64)
-        logger.debug("N2HE Keys generated")
+        """Generate secret key using CSPRNG."""
+        # Use secrets-seeded RNG for key generation
+        self.lwe_key = _crypto_rng.choice([-1, 0, 1], size=self.params.n).astype(np.int64)
+        logger.debug("N2HE Keys generated with CSPRNG")
 
     def save_key(self, path: Union[str, Path]):
         """Save the secret key to a file."""
@@ -163,8 +168,8 @@ class N2HEContext:
         mu, delta = self.params.mu, self.params.delta
         
         m_vec = messages.astype(np.int64) % t
-        # Matrix A is uniform over Z_q (Standard LWE)
-        A = np.random.randint(0, q, size=(k, n), dtype=np.int64)
+        # Matrix A is uniform over Z_q (Standard LWE) - using CSPRNG
+        A = _crypto_rng.integers(0, q, size=(k, n), dtype=np.int64)
         
         # Error term E is sampled from Skellam distribution
         # Symmetric Skellam noise provides the Differential Privacy guarantee

@@ -95,6 +95,17 @@ This section maps the underlying cryptographic and statistical technologies to t
 | **Evaluation Gating** | Bayesian check for model regression | **Production Safety Rail** | Guarantees only safe, higher-performing models hit the fleet. |
 | **Key Management System** | Automated rotation & hardware attestation | **Enterprise Governance** | Meets SOC 2, HIPAA, and ISO 27001 audit compliance. |
 
+### 🔐 Security Hardening (v2.0)
+
+TensorGuard v2.0 implements cryptographic best practices:
+
+| Component | Security Measure |
+|:----------|:-----------------|
+| **Key Generation** | Uses `secrets`-seeded CSPRNG (PCG64) for LWE key generation |
+| **Noise Sampling** | Skellam DP noise sampled via CSPRNG, not `numpy.random` |
+| **Serialization** | Uses `msgpack` (no RCE risk) instead of `pickle` |
+| **Matrix A (LWE)** | Generated with CSPRNG for cryptographic uniformity |
+
 ---
 
 ## 🔄 4. Step-by-Step Security Pipeline

@@ -5,7 +5,7 @@ Implementing Differential Privacy, Sparsification, and Compression.
 
 import numpy as np
 import gzip
-import pickle
+import msgpack  # Safe serialization (no RCE risk unlike pickle)
 from typing import Dict, Any, Optional
 from ..utils.logging import get_logger
 from ..utils.exceptions import QualityWarning, ValidationError
@@ -70,6 +70,7 @@ class LegacyMagnitudeSparsifier:
     def __init__(self, k_ratio: float = 0.01):
         self.k_ratio = k_ratio
         self.attn_boost = 2.0
+        logger.warning("LegacyMagnitudeSparsifier is deprecated. Use ThresholdSparsifier instead.")
     
     def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         # Implementation remains for backward compatibility
@@ -86,7 +87,10 @@ class LegacyMagnitudeSparsifier:
         return result
 
 class APHECompressor:
-    """Neural compression using quantization."""
+    """
+    Neural compression using quantization.
+    Uses msgpack for safe serialization (no RCE vulnerability).
+    """
     def __init__(self, compression_ratio: int = 32):
         self.compression_ratio = compression_ratio
         self.bits = max(2, 32 // compression_ratio)
@@ -94,7 +98,7 @@ class APHECompressor:
     def compress(self, gradients: Dict[str, np.ndarray]) -> bytes:
         compressed_data = {}
         for name, grad in gradients.items():
-            v_min, v_max = grad.min(), grad.max()
+            v_min, v_max = float(grad.min()), float(grad.max())
             if v_max - v_min > 1e-8:
                 normalized = (grad - v_min) / (v_max - v_min)
                 levels = 2 ** self.bits
@@ -103,17 +107,25 @@ class APHECompressor:
                 quantized = np.zeros_like(grad, dtype=np.uint8)
                 v_min = v_max = 0.0
             
-            compressed_data[name] = {'q': quantized, 'min': float(v_min), 'max': float(v_max), 'shape': grad.shape}
-        return gzip.compress(pickle.dumps(compressed_data))
+            compressed_data[name] = {
+                'q': quantized.tobytes(),
+                'dtype': str(quantized.dtype),
+                'min': v_min,
+                'max': v_max,
+                'shape': list(grad.shape)
+            }
+        return gzip.compress(msgpack.packb(compressed_data, use_bin_type=True))
     
     def decompress(self, data: bytes) -> Dict[str, np.ndarray]:
-        compressed_data = pickle.loads(gzip.decompress(data))
+        compressed_data = msgpack.unpackb(gzip.decompress(data), raw=False)
         result = {}
         levels = 2 ** self.bits
         for name, payload in compressed_data.items():
-            dequantized = payload['q'].astype(np.float32) / (levels - 1)
-            result[name] = (dequantized * (payload['max'] - payload['min']) + payload['min']).reshape(payload['shape'])
+            quantized = np.frombuffer(payload['q'], dtype=np.uint8).reshape(payload['shape'])
+            dequantized = quantized.astype(np.float32) / (levels - 1)
+            result[name] = (dequantized * (payload['max'] - payload['min']) + payload['min'])
         return result
+
 
 class QualityMonitor:
     """Monitors reconstruction integrity."""

@@ -32,7 +32,8 @@ def dashboard(port):
 @main.command()
 def info():
     """Display system and security information."""
-    click.echo(f"TensorGuard SDK v1.3.0")
+    from . import __version__
+    click.echo(f"TensorGuard SDK v{__version__}")
     click.echo(f"Security: {settings.SECURITY_LEVEL}-bit Post-Quantum (N2HE)")
     click.echo(f"Lattice Dimension: {settings.LATTICE_DIMENSION}")
     click.echo(f"Cloud Endpoint: {settings.CLOUD_ENDPOINT}")
