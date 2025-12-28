@@ -82,8 +82,10 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         self._privacy_budget_used = 0.0
         self._total_submissions = 0
         self._error_memory: Dict[str, np.ndarray] = {}
+        self._error_memory_last_seen: Dict[str, int] = {}  # Track last round each param was seen
         self._current_round = 0
         self._MAX_BUFFER_SIZE = 100 # Production safety limit
+        self._ERROR_MEMORY_MAX_STALE_ROUNDS = 10  # Prune after N rounds of inactivity
 
         logger.debug(f"EdgeClient initialized. Bases: {[b.__name__ for b in self.__class__.__bases__]}")
         logger.info(f"EdgeClient initialized for {self.config.model_type}")
@@ -177,8 +179,21 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
             # c) Sparsify
             sparse = self._sparsifier.sparsify(clipped)
             
-            # d) Update residuals
+            # d) Update residuals and track last seen round
             self._error_memory = {k: clipped[k] - sparse[k] for k in clipped if k in sparse}
+            for k in self._error_memory:
+                self._error_memory_last_seen[k] = self._current_round
+            
+            # e) Prune stale error memory entries (memory optimization)
+            stale_keys = [
+                k for k, last_round in self._error_memory_last_seen.items()
+                if self._current_round - last_round > self._ERROR_MEMORY_MAX_STALE_ROUNDS
+            ]
+            for k in stale_keys:
+                self._error_memory.pop(k, None)
+                self._error_memory_last_seen.pop(k, None)
+            if stale_keys:
+                logger.debug(f"Pruned {len(stale_keys)} stale entries from error memory")
     
             # 3. Aggressive Compression & Encryption
             compress_start = time.time()
