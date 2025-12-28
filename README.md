@@ -831,6 +831,6 @@ The Dashboard is for **Observability** (monitoring active connections), not **Pr
 
 ---
 
-*Have more questions? Open an issue on GitHub or email tensorguard@example.com*
+*Have more questions? Open an issue on GitHub or email dfoo008@e.ntu.edu.sg*
 
 
