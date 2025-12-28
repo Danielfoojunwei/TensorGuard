@@ -15,7 +15,7 @@ All dashboard components have been tested and verified. The system is ready for 
 
 | Parameter | Value |
 |:----------|:------|
-| **Dashboard URL** | http://localhost:8099 |
+| **Dashboard URL** | http://localhost:8000 |
 | **Test Date** | 2025-12-28 |
 | **Browser** | Headless Chrome |
 | **Server** | TensorGuard Dashboard Server |
@@ -41,7 +41,7 @@ All dashboard components have been tested and verified. The system is ready for 
 
 | TC-ID | Test Case | Expected | Actual | Status |
 |:------|:----------|:---------|:-------|:------:|
-| TC-1.1 | Dashboard loads at port 8099 | HTTP 200 | HTTP 200 | ✅ |
+| TC-1.1 | Dashboard loads at port 8000 | HTTP 200 | HTTP 200 | ✅ |
 | TC-1.2 | Page contains "TensorGuard" | Present | Present | ✅ |
 | TC-1.3 | Version shows v2.0.0-FedMoE | Present | Present | ✅ |
 | TC-1.4 | All nav views present | 4 views | 4 views | ✅ |
@@ -129,19 +129,6 @@ Network Errors: None
 | Page Load Time | < 500ms | < 2000ms | ✅ |
 | API Response | < 100ms | < 500ms | ✅ |
 | Animation FPS | 60 | > 30 | ✅ |
-
----
-
-## Screenshots
-
-### Overview View
-![Overview showing telemetry and MoI](../.system_generated/click_feedback/click_feedback_1766896438190.png)
-
-### Settings with KMS
-![Settings showing KMS configuration](../.system_generated/click_feedback/click_feedback_1766896379874.png)
-
-### KMS Test Connection
-![KMS connection test feedback](../.system_generated/click_feedback/click_feedback_1766896418311.png)
 
 ---
 
