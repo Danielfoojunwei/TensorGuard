@@ -222,7 +222,7 @@ flowchart TD
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
 │  │   CLI       │  │  Dashboard  │  │  REST API               │  │
-│  │ tensorguard │  │  :8005      │  │  /api/status, /api/...  │  │
+│  │ tensorguard │  │  :8000      │  │  /api/status, /api/...  │  │
 │  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
 │         │                │                     │                │
 │  ┌──────▼─────────────────────────────────────▼──────────────┐  │
@@ -261,8 +261,8 @@ package = client.process_round()  # Returns encrypted bytes
 
 ### Dashboard
 ```bash
-tensorguard dashboard --port 8005
-# Open http://localhost:8005
+tensorguard dashboard --port 8000
+# Open http://localhost:8000
 ```
 
 ### Key Generation
