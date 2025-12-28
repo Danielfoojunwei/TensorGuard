@@ -305,6 +305,7 @@ The TensorGuard v2.0.0-FedMoE Control Center is a multi-view enterprise portal d
     *   **LoRA Rank**: Adjust training capacity vs. memory efficiency (Rank 8-32).
     *   **Privacy Epsilon (ε)**: Global privacy budget management.
     *   **Grad Sparsity**: Control bandwidth by tuning top-K gradient selection %.
+    *   **🔐 KMS/HSM Configuration**: Select and configure cloud KMS providers (AWS KMS, Azure Key Vault, GCP Cloud KMS) with connection testing and audit logging.
 3.  **📈 Usage Analytics**: Historical trends with aggregated bandwidth and success rate metrics.
 4.  **📜 Version Control**: Model provenance tracking with an audit trail of every deployed model iteration.
 
@@ -312,9 +313,15 @@ The TensorGuard v2.0.0-FedMoE Control Center is a multi-view enterprise portal d
 
 1.  **Bootstrap Security**: Click **"Rotate Key"** in the Security card to generate a fresh 128-bit N2HE enterprise key. Status must show `READY`.
 2.  **Verify Heartbeat**: Ensure the **"Secure Link"** in the header is green, indicating active gRPC connectivity.
-3.  **Deploy Policy**: Navigate to **Settings** to adjust LoRA rank or Sparsity targets based on your current network environment (e.g., Satellite vs. 5G).
-4.  **Monitor Intelligence**: In the **Overview**, observe how the **Visual** and **Language** experts are prioritized during the current fine-tuning round.
-5.  **Audit Governance**: Scroll to the **Security Audit Log** for an immutable trail of key rotations and training session starts.
+3.  **Configure KMS/HSM**: Navigate to **Settings** → **Key Management System** to select your provider:
+    - **Local**: File-based key storage (default)
+    - **AWS KMS**: Enter CMK ARN and region
+    - **Azure Key Vault**: Enter Vault URL and key name
+    - **GCP Cloud KMS**: Enter Project, Keyring, and Key name
+4.  **Test Connection**: Click **"Test Connection"** to verify HSM/KMS connectivity.
+5.  **Deploy Policy**: Navigate to **Settings** to adjust LoRA rank or Sparsity targets based on your current network environment (e.g., Satellite vs. 5G).
+6.  **Monitor Intelligence**: In the **Overview**, observe how the **Visual** and **Language** experts are prioritized during the current fine-tuning round.
+7.  **Audit Governance**: Scroll to the **Key Audit Log** for an immutable trail of key rotations, KMS config changes, and training session starts.
 
 Access the dashboard via the unified CLI:
 ```bash

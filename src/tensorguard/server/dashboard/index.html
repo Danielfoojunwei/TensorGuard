@@ -190,6 +190,95 @@
                     </div>
                     <button class="btn primary" id="btn-save-settings">Apply Changes</button>
                 </div>
+
+                <!-- KMS/HSM Configuration -->
+                <div class="card kms-card">
+                    <h3>🔐 Key Management System (KMS/HSM)</h3>
+                    <div class="kms-status-bar">
+                        <span class="kms-provider-label">Provider:</span>
+                        <span id="kms-provider-status" class="badge">Local</span>
+                        <span id="kms-connection-dot" class="dot status-local"></span>
+                        <span id="kms-connection-text">Using local key storage</span>
+                    </div>
+
+                    <div class="settings-grid">
+                        <div class="setting-item full-width">
+                            <label for="kms-provider">KMS Provider</label>
+                            <select id="kms-provider" title="Key Management Service Provider">
+                                <option value="local" selected>🗄️ Local (File-based)</option>
+                                <option value="aws">☁️ AWS KMS</option>
+                                <option value="azure">🔷 Azure Key Vault</option>
+                                <option value="gcp">🌐 GCP Cloud KMS</option>
+                            </select>
+                        </div>
+
+                        <!-- AWS KMS Config (hidden by default) -->
+                        <div id="kms-aws-config" class="kms-provider-config hidden">
+                            <div class="setting-item">
+                                <label for="aws-region">AWS Region</label>
+                                <select id="aws-region">
+                                    <option value="us-east-1">us-east-1</option>
+                                    <option value="us-west-2">us-west-2</option>
+                                    <option value="eu-west-1">eu-west-1</option>
+                                    <option value="ap-southeast-1">ap-southeast-1</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label for="aws-cmk-arn">CMK ARN</label>
+                                <input type="text" id="aws-cmk-arn" placeholder="arn:aws:kms:region:account:key/id">
+                            </div>
+                        </div>
+
+                        <!-- Azure Key Vault Config (hidden by default) -->
+                        <div id="kms-azure-config" class="kms-provider-config hidden">
+                            <div class="setting-item">
+                                <label for="azure-vault-url">Vault URL</label>
+                                <input type="text" id="azure-vault-url" placeholder="https://myvault.vault.azure.net">
+                            </div>
+                            <div class="setting-item">
+                                <label for="azure-key-name">Key Name</label>
+                                <input type="text" id="azure-key-name" placeholder="tensorguard-key">
+                            </div>
+                        </div>
+
+                        <!-- GCP Cloud KMS Config (hidden by default) -->
+                        <div id="kms-gcp-config" class="kms-provider-config hidden">
+                            <div class="setting-item">
+                                <label for="gcp-project">Project ID</label>
+                                <input type="text" id="gcp-project" placeholder="my-project-123">
+                            </div>
+                            <div class="setting-item">
+                                <label for="gcp-location">Location</label>
+                                <input type="text" id="gcp-location" placeholder="global" value="global">
+                            </div>
+                            <div class="setting-item">
+                                <label for="gcp-keyring">Key Ring</label>
+                                <input type="text" id="gcp-keyring" placeholder="tensorguard-keyring">
+                            </div>
+                            <div class="setting-item">
+                                <label for="gcp-keyname">Key Name</label>
+                                <input type="text" id="gcp-keyname" placeholder="fleet-encryption-key">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kms-actions">
+                        <button class="btn secondary" id="btn-test-kms">🔗 Test Connection</button>
+                        <button class="btn primary" id="btn-save-kms">💾 Save KMS Config</button>
+                    </div>
+
+                    <!-- KMS Audit Log -->
+                    <div class="kms-audit-section">
+                        <h4>📜 Key Audit Log</h4>
+                        <div id="kms-audit-log" class="audit-log">
+                            <div class="audit-entry">
+                                <span class="timestamp">2025-12-28 12:00:00</span>
+                                <span class="event">KEY_REGISTERED</span>
+                                <span class="details">fleet_v1 (128-bit N2HE)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- View: Usage -->

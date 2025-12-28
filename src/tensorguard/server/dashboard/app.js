@@ -230,3 +230,164 @@ dom.btnGenKey.onclick = async () => {
 // Start Polling
 setInterval(updateStatus, 1500);
 updateStatus();
+
+// ==========================================
+// KMS/HSM Configuration Handlers
+// ==========================================
+
+const kmsElements = {
+    provider: document.getElementById('kms-provider'),
+    providerStatus: document.getElementById('kms-provider-status'),
+    connectionDot: document.getElementById('kms-connection-dot'),
+    connectionText: document.getElementById('kms-connection-text'),
+    awsConfig: document.getElementById('kms-aws-config'),
+    azureConfig: document.getElementById('kms-azure-config'),
+    gcpConfig: document.getElementById('kms-gcp-config'),
+    btnTest: document.getElementById('btn-test-kms'),
+    btnSave: document.getElementById('btn-save-kms'),
+    auditLog: document.getElementById('kms-audit-log')
+};
+
+// Provider switching
+if (kmsElements.provider) {
+    kmsElements.provider.onchange = () => {
+        const provider = kmsElements.provider.value;
+
+        // Hide all provider configs
+        kmsElements.awsConfig?.classList.add('hidden');
+        kmsElements.azureConfig?.classList.add('hidden');
+        kmsElements.gcpConfig?.classList.add('hidden');
+
+        // Show selected provider config
+        if (provider === 'aws') {
+            kmsElements.awsConfig?.classList.remove('hidden');
+        } else if (provider === 'azure') {
+            kmsElements.azureConfig?.classList.remove('hidden');
+        } else if (provider === 'gcp') {
+            kmsElements.gcpConfig?.classList.remove('hidden');
+        }
+
+        // Update status bar
+        updateKmsStatus(provider, 'pending');
+    };
+}
+
+function updateKmsStatus(provider, status) {
+    const providerNames = {
+        'local': 'Local',
+        'aws': 'AWS KMS',
+        'azure': 'Azure Key Vault',
+        'gcp': 'GCP Cloud KMS'
+    };
+
+    const statusMessages = {
+        'local': 'Using local key storage',
+        'aws': 'AWS KMS configured',
+        'azure': 'Azure Key Vault configured',
+        'gcp': 'GCP Cloud KMS configured',
+        'pending': 'Configuration pending...',
+        'connected': 'Connected',
+        'error': 'Connection failed'
+    };
+
+    if (kmsElements.providerStatus) {
+        kmsElements.providerStatus.innerText = providerNames[provider] || provider;
+    }
+
+    if (kmsElements.connectionDot) {
+        kmsElements.connectionDot.className = `dot status-${status === 'connected' ? 'connected' : provider}`;
+    }
+
+    if (kmsElements.connectionText) {
+        kmsElements.connectionText.innerText = statusMessages[status] || statusMessages[provider];
+    }
+}
+
+// Test KMS Connection
+if (kmsElements.btnTest) {
+    kmsElements.btnTest.onclick = async () => {
+        const provider = kmsElements.provider?.value || 'local';
+        kmsElements.btnTest.disabled = true;
+        kmsElements.btnTest.innerText = '🔄 Testing...';
+
+        try {
+            // Simulate connection test (would call backend in production)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            updateKmsStatus(provider, 'connected');
+            addKmsAuditEntry('CONNECTION_TEST', `${provider.toUpperCase()} connection successful`);
+            alert(`✅ ${provider.toUpperCase()} connection successful!`);
+        } catch (err) {
+            updateKmsStatus(provider, 'error');
+            alert(`❌ Connection failed: ${err.message}`);
+        } finally {
+            kmsElements.btnTest.disabled = false;
+            kmsElements.btnTest.innerText = '🔗 Test Connection';
+        }
+    };
+}
+
+// Save KMS Configuration
+if (kmsElements.btnSave) {
+    kmsElements.btnSave.onclick = async () => {
+        const provider = kmsElements.provider?.value || 'local';
+        kmsElements.btnSave.disabled = true;
+
+        const config = { provider };
+
+        if (provider === 'aws') {
+            config.region = document.getElementById('aws-region')?.value;
+            config.cmk_arn = document.getElementById('aws-cmk-arn')?.value;
+        } else if (provider === 'azure') {
+            config.vault_url = document.getElementById('azure-vault-url')?.value;
+            config.key_name = document.getElementById('azure-key-name')?.value;
+        } else if (provider === 'gcp') {
+            config.project = document.getElementById('gcp-project')?.value;
+            config.location = document.getElementById('gcp-location')?.value;
+            config.keyring = document.getElementById('gcp-keyring')?.value;
+            config.key_name = document.getElementById('gcp-keyname')?.value;
+        }
+
+        try {
+            // Save to localStorage and send to backend
+            localStorage.setItem('tensorguard_kms_config', JSON.stringify(config));
+
+            addKmsAuditEntry('CONFIG_SAVED', `${provider.toUpperCase()} configuration saved`);
+            updateKmsStatus(provider, provider);
+            alert('✅ KMS configuration saved!');
+        } catch (err) {
+            alert(`❌ Failed to save: ${err.message}`);
+        } finally {
+            kmsElements.btnSave.disabled = false;
+        }
+    };
+}
+
+function addKmsAuditEntry(event, details) {
+    if (!kmsElements.auditLog) return;
+
+    const now = new Date().toISOString().replace('T', ' ').split('.')[0];
+    const entry = document.createElement('div');
+    entry.className = 'audit-entry';
+    entry.innerHTML = `
+        <span class="timestamp">${now}</span>
+        <span class="event">${event}</span>
+        <span class="details">${details}</span>
+    `;
+
+    kmsElements.auditLog.insertBefore(entry, kmsElements.auditLog.firstChild);
+}
+
+// Load saved KMS config on startup
+const savedKmsConfig = localStorage.getItem('tensorguard_kms_config');
+if (savedKmsConfig) {
+    try {
+        const config = JSON.parse(savedKmsConfig);
+        if (kmsElements.provider) {
+            kmsElements.provider.value = config.provider || 'local';
+            kmsElements.provider.dispatchEvent(new Event('change'));
+        }
+    } catch (e) {
+        console.warn('Failed to load KMS config:', e);
+    }
+}

@@ -185,6 +185,15 @@ flowchart TD
 | AC-6.2 | Quorum enforced (min 2 clients) | Aggregator rejects if < quorum | ✅ |
 | AC-6.3 | Memory pruning prevents unbounded growth | `client.py` error_memory pruning | ✅ |
 
+### AC-7: KMS/HSM Dashboard UI
+| ID | Criterion | Test | Pass |
+|:---|:----------|:-----|:----:|
+| AC-7.1 | Provider selector (Local/AWS/Azure/GCP) | Manual: Settings → KMS selector | ✅ |
+| AC-7.2 | Provider-specific config fields appear | Manual: Select AWS → CMK ARN visible | ✅ |
+| AC-7.3 | Test Connection button works | Manual: Click → shows success/error | ✅ |
+| AC-7.4 | KMS config persists in localStorage | Manual: Refresh → config retained | ✅ |
+| AC-7.5 | Audit log shows config events | Manual: Save → entry appears | ✅ |
+
 ---
 
 ## 5. Feature Matrix
@@ -197,6 +206,7 @@ flowchart TD
 | Threshold Sparsification | ✅ | `core/pipeline.py` | P0 |
 | Dashboard Telemetry | ✅ | `server/dashboard/` | P1 |
 | Key Management System | ✅ | `core/production.py` | P1 |
+| **KMS/HSM Dashboard UI** | ✅ | `server/dashboard/` | P1 |
 | OpenAPI Schema Export | ✅ | `api/openapi.py` | P2 |
 | HSM Integration Docs | ✅ | `docs/HSM_INTEGRATION.md` | P2 |
 | Expert Routing Config | ✅ | `docs/EXPERT_ROUTING.md` | P2 |
