@@ -45,6 +45,25 @@ from tensorguard.core.crypto import generate_key
 generate_key("keys/my_enterprise_key.npy", security_level=128)
 ```
 
+### Security Hardening (v2.0)
+
+TensorGuard v2.0 includes hardened security by default:
+
+| Feature | Implementation |
+|:--------|:---------------|
+| **CSPRNG Key Generation** | Uses `secrets`-seeded PCG64 |
+| **Safe Serialization** | msgpack instead of pickle (no RCE) |
+| **Skellam DP Noise** | Cryptographically secure sampling |
+| **HSM Integration** | See [`docs/HSM_INTEGRATION.md`](docs/HSM_INTEGRATION.md) |
+
+For enterprise key management with AWS KMS, Azure Key Vault, or GCP Cloud KMS, refer to the [HSM Integration Guide](docs/HSM_INTEGRATION.md).
+
+### Related Documentation
+
+- **[Product Requirements Document](docs/PRD.md)**: User personas, flows, acceptance criteria
+- **[Expert Routing Configuration](docs/EXPERT_ROUTING.md)**: Customize MoE expert routing
+- **[HSM Integration](docs/HSM_INTEGRATION.md)**: Cloud KMS and HSM setup
+
 ---
 
 ## 2. Step-by-Step User Flow
