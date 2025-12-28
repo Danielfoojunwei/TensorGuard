@@ -102,7 +102,7 @@ TensorGuard v2.0 implements cryptographic best practices:
 | **Key Generation** | Uses `secrets`-seeded CSPRNG (PCG64) for LWE key generation |
 | **Noise Sampling** | Skellam DP noise sampled via CSPRNG, not `numpy.random` |
 | **Serialization** | Uses `msgpack` (no RCE risk) instead of `pickle` |
-| **Sparsification** | **Random (Rand-K)** instead of Top-K (Miao et al., FedVLA) |
+| **Sparsification** | **Random (Rand-K)** per FedVLA research (Miao et al.) |
 | **Matrix A (LWE)** | Generated with CSPRNG for cryptographic uniformity |
 
 ---
@@ -288,18 +288,20 @@ We replicated the **OpenVLA-OFT** SOTA recipe (Kim et al., 2024) on the LIBERO s
 | Privacy Guarantee | ε ≤ 1.0 | **ε = 0.01** | ✅ PASS |
 | Key Generation Time | ≤ 5s | **0.6s** | ✅ PASS |
 
-### Comparative Analysis: Vanilla vs. TensorGuard
+### TensorGuard Performance Summary
 
-| Metric | Legacy (v1.x) | TensorGuard FedMoE (v2.0) | Delta |
-| :--- | :--- | :--- | :--- |
-| **Task Success Rate** | 97.1% | **98.3%** | **+1.2%** |
-| **Avg Round Latency** | 950 ms | **999 ms** | +49 ms |
-| **Privacy Guarantee** | Heuristic | **Skellam DP (Formal)** | Mathematical Security |
-| **Gradient Selection** | Top-K (Flawed) | **Expert Gating + Random (Rand-K)** | Stable Convergence |
+| Metric | TensorGuard FedMoE (v2.0) | Notes |
+| :--- | :--- | :--- |
+| **Task Success Rate** | **98.3%** | Matches OpenVLA-OFT baseline |
+| **Avg Round Latency** | **999 ms** | Includes encryption overhead |
+| **Privacy Guarantee** | **Skellam DP (ε=0.01)** | Formal mathematical guarantee |
+| **Gradient Selection** | **Expert Gating + Random (Rand-K)** | Privacy-preserving, unbiased |
 
-### Per-Task Breakdown (LIBERO Suite)
+### Per-Task Results (LIBERO Suite)
 
-| Task | Vanilla OFT | TensorGuard OFT | Δ |
+Based on the OpenVLA-OFT methodology (Kim et al., 2024):
+
+| Task | OpenVLA-OFT Baseline | TensorGuard OFT | Δ |
 | :--- | :--- | :--- | :--- |
 | scoop_raisins | 95.2% | 98.1% | +2.9% |
 | fold_shirt | 97.1% | 97.3% | +0.2% |
@@ -309,7 +311,7 @@ We replicated the **OpenVLA-OFT** SOTA recipe (Kim et al., 2024) on the LIBERO s
 ### Visual Proof
 
 ![Success Parity](docs/images/success_parity.png)
-*Figure 1: Performance Parity between OpenVLA-OFT and TensorGuard across LIBERO tasks. Privacy-preserving fine-tuning achieves comparable or better results.*
+*Figure 1: Performance comparison on LIBERO tasks. TensorGuard achieves parity or improvement over the OpenVLA-OFT baseline while providing privacy guarantees.*
 
 ![Latency Tax](docs/images/latency_tax.png)
 *Figure 2: Latency breakdown of the security stack. Skellam-based N2HE accounts for <2% of round compute.*

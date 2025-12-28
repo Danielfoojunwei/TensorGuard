@@ -172,10 +172,10 @@ def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
     return result
 ```
 
-**FedVLA Advantages:**
-1. **Privacy:** Indices are chosen randomly, leaking zero information about data distribution (unlike Top-K which reveals active neurons).
+**FedVLA Advantages (Miao et al.):**
+1. **Privacy:** Indices are chosen randomly, leaking zero information about data distribution.
 2. **Unbiased:** Does not systematically ignore small updates, preventing "gradient starvation".
-3. **Robustness:** Works better for heterogeneous fleets with non-IID data.
+3. **Robustness:** Data-agnostic selection works better for heterogeneous fleets with non-IID data.
 
 **Bandwidth Impact:** 99% sparsity → 100x reduction in non-zero values.
 
