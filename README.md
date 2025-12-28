@@ -793,6 +793,29 @@ adapter.routing["surgical_precision"] = [10, 11]
 See [docs/EXPERT_ROUTING.md](docs/EXPERT_ROUTING.md) for advanced learned gating.
 </details>
 
+<details>
+<summary><strong>🤝 Q11: What is the complete technology stack I need?</strong></summary>
+
+**A:** You need distinct stacks for the **Local Fine-Tuning** (which you control) and the **Federated Orchestration** (which TensorGuard handles).
+
+#### 1. Local Fine-Tuning Stack (Your Responsibility)
+This is the code that actually runs on the robot to compute gradients.
+*   **Deep Learning Framework**: PyTorch (recommended) or JAX/TensorFlow.
+*   **Model Library**: Hugging Face `transformers` (for OpenVLA/RT-2) or `timm`.
+*   **PEFT Library**: Hugging Face `peft` is highly recommended for implementing LoRA/QLoRA adapters efficiently.
+*   **Training Loop**: A standard supervised learning loop (forward pass -> loss -> backward).
+*   **Hardware**: An edge GPU (NVIDIA Jetson Orin / RTX 4090) capable of holding the model + one batch in memory.
+
+#### 2. Federated Learning Stack (TensorGuard's Responsibility)
+This is the infrastructure that moves and secures the updates.
+*   **Privacy Engine**: `tensorguard.core` (Handles Gradient Clipping, DP Noise, N2HE Encryption).
+*   **Communication Layer**: Built-in gRPC/HTTP2 client for secure, bidirectional streaming.
+*   **Aggregation Server**: `tensorguard.server` (Handles Outlier Detection, Secure Sum, Model Broadcasting).
+*   **Management**: The **Dashboard** (HTML/JS) for fleet visibility.
+
+**Workflow**: You write the "Local Fine-Tuning" code. You wrap it with the "Federated Learning" SDK.
+</details>
+
 ---
 
 *Have more questions? Open an issue on GitHub or email tensorguard@example.com*
