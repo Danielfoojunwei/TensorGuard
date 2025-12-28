@@ -816,6 +816,19 @@ This is the infrastructure that moves and secures the updates.
 **Workflow**: You write the "Local Fine-Tuning" code. You wrap it with the "Federated Learning" SDK.
 </details>
 
+<details>
+<summary><strong>➕ Q12: How do I add more robots via the UI?</strong></summary>
+
+**A:** You **do not** add robots via the UI. TensorGuard uses a **Zero-Trust "Push" Model**:
+
+1.  **Provision the Robot**: Install the `tensorguard` SDK on your new robot.
+2.  **Configure**: Point the robot's `tensorguard.yaml` to your Aggregation Server's IP (`server_address: "192.168.1.100:8080"`).
+3.  **Authenticate**: Ensure the robot has the correct **Shared N2HE Public Key** (distribute this securely via your HSM/KMS).
+4.  **Connect**: Start the client. It will automatically "phone home" and appear in the Dashboard's **Real-Time Fleet Telemetry** once authenticated.
+
+The Dashboard is for **Observability** (monitoring active connections), not **Provisioning** (creating accounts). This prevents the central server from being a single point of attack for hijacking fleets.
+</details>
+
 ---
 
 *Have more questions? Open an issue on GitHub or email tensorguard@example.com*
