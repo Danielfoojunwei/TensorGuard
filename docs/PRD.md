@@ -203,7 +203,7 @@ flowchart TD
 | N2HE Encryption | ✅ | `core/crypto.py` | P0 |
 | Skellam DP Noise | ✅ | `core/crypto.py` | P0 |
 | Expert-Driven Aggregation | ✅ | `core/adapters.py` | P0 |
-| Threshold Sparsification | ✅ | `core/pipeline.py` | P0 |
+| Random Sparsification | ✅ | `core/pipeline.py` | P0 |
 | Dashboard Telemetry | ✅ | `server/dashboard/` | P1 |
 | Key Management System | ✅ | `core/production.py` | P1 |
 | **KMS/HSM Dashboard UI** | ✅ | `server/dashboard/` | P1 |

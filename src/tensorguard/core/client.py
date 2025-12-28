@@ -7,7 +7,7 @@ from datetime import datetime
 from ..api.schemas import ShieldConfig, Demonstration, SubmissionReceipt, ClientStatus
 from ..core.adapters import VLAAdapter, MoEAdapter
 from ..core.crypto import N2HEEncryptor, CryptographyError
-from ..core.pipeline import GradientClipper, ThresholdSparsifier, ExpertGater, APHECompressor, QualityMonitor
+from ..core.pipeline import GradientClipper, RandomSparsifier, ExpertGater, APHECompressor, QualityMonitor
 from ..utils.logging import get_logger
 from ..utils.exceptions import ValidationError, CommunicationError
 from ..utils.config import settings
@@ -72,7 +72,7 @@ class EdgeClient(fl.client.NumPyClient if 'fl' in globals() else object):
         # Initialize v2.0 pipeline components (Expert-Driven)
         self._clipper = GradientClipper(self.dp_profile.clipping_norm)
         self._gater = ExpertGater(gate_threshold=0.15)
-        self._sparsifier = ThresholdSparsifier(threshold=0.001)
+        self._sparsifier = RandomSparsifier(sparsity_ratio=self.config.sparsity)
         self._compressor = APHECompressor(self.config.compression_ratio)
         self._encryptor = N2HEEncryptor(self.config.key_path, self.config.security_level)
         self._quality_monitor = QualityMonitor()

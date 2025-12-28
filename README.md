@@ -102,9 +102,30 @@ TensorGuard v2.0 implements cryptographic best practices:
 | **Key Generation** | Uses `secrets`-seeded CSPRNG (PCG64) for LWE key generation |
 | **Noise Sampling** | Skellam DP noise sampled via CSPRNG, not `numpy.random` |
 | **Serialization** | Uses `msgpack` (no RCE risk) instead of `pickle` |
+| **Sparsification** | **Random (Rand-K)** instead of Top-K (Miao et al., FedVLA) |
 | **Matrix A (LWE)** | Generated with CSPRNG for cryptographic uniformity |
 
 ---
+
+## 🔄 4. Step-by-Step Security Pipeline
+
+Every gradient update undergoes a rigorous multi-staged protection cycle before leaving the robot's physical perimeter.
+
+```mermaid
+sequenceDiagram
+    participant R as 🤖 Robot (Edge)
+    participant P as 🛡️ Privacy Engine
+    participant S as ☁️ Aggregation Server
+
+    R->>P: 1. Raw Gradient Calculation (PyTorch/JAX)
+    Note over P: **Clip** (L2 Norm ≤ 1.0)
+    Note over P: **Sparsify** (Random 1% Selection)
+    Note over P: **Compress** (Quantize → msgpack)
+    Note over P: **Encrypt** (N2HE LWE)
+    P->>S: 2. Transmit Encrypted Update (HTTPS/gRPC)
+    Note over S: **Secure Aggregation** (Σ Encrypted)
+    S->>R: 3. Broadcast Global Model
+```
 
 ### 🧬 Research Foundation: MOAI & DTC FHE Architecture
 

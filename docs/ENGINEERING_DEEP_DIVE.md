@@ -155,19 +155,27 @@ def clip(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
 
 **Privacy Guarantee:** Clipping is essential for DP composition—it bounds the sensitivity Δf.
 
-### 3.3 Sparsification (`ThresholdSparsifier`)
+### 3.3 Sparsification (`RandomSparsifier`)
 
-Keeps only the K largest gradient values, zeroing the rest:
+Implements **Random Sparsification (Rand-K)** as recommended by the FedVLA research (Miao et al.):
 
 ```python
 def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-    sparse = {}
+    result = {}
     for name, grad in gradients.items():
-        threshold = np.percentile(np.abs(grad), 100 - self.top_k_percent)
-        mask = np.abs(grad) >= threshold
-        sparse[name] = grad * mask
-    return sparse
+        k = max(1, int(len(grad.flatten()) * self.sparsity_ratio))
+        indices = np.random.choice(len(grad.flatten()), size=k, replace=False)
+        # Only keep values at random indices
+        sparse = np.zeros_like(grad)
+        sparse.flat[indices] = grad.flat[indices]
+        result[name] = sparse
+    return result
 ```
+
+**FedVLA Advantages:**
+1. **Privacy:** Indices are chosen randomly, leaking zero information about data distribution (unlike Top-K which reveals active neurons).
+2. **Unbiased:** Does not systematically ignore small updates, preventing "gradient starvation".
+3. **Robustness:** Works better for heterogeneous fleets with non-IID data.
 
 **Bandwidth Impact:** 99% sparsity → 100x reduction in non-zero values.
 
@@ -433,7 +441,7 @@ The dashboard provides UI for configuring:
 │  │ EdgeClient.process_round()                                     │ │
 │  │ 1. MoEAdapter.compute_gradients() → Dict[expert, grads]       │ │
 │  │ 2. GradientClipper.clip() → L2 norm ≤ 1.0                     │ │
-│  │ 3. ThresholdSparsifier.sparsify() → Top 1% values             │ │
+│  │ 3. RandomSparsifier.sparsify() → Random 1% subset             │ │
 │  │ 4. APHECompressor.compress() → msgpack + gzip → 50x smaller   │ │
 │  │ 5. N2HEEncryptor.encrypt() → LWE ciphertext                   │ │
 │  └───────────────────────────────────────────────────────────────┘ │

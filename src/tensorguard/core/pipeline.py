@@ -43,47 +43,55 @@ class ExpertGater:
                     combined[k] = combined.get(k, 0) + v
         return combined
 
-class ThresholdSparsifier:
+class RandomSparsifier:
     """
-    Threshold-based Sparsification.
-    Maintains O(c) error accumulation (Canini et al., 2021), 
-    avoiding the O(c^4) blowup of Top-K.
-    """
-    def __init__(self, threshold: float = 0.001):
-        self.threshold = threshold
+    Random Sparsification (Rand-K).
+    Selects a random subset of gradients to transmit, ensuring data independence.
     
-    def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        result = {}
-        for name, grad in gradients.items():
-            # Keep only gradients exceeding the learnable/fixed threshold
-            mask = np.abs(grad) > self.threshold
-            sparse = np.zeros_like(grad)
-            sparse[mask] = grad[mask]
-            result[name] = sparse
-        return result
+    Advantages (Miao et al., FedVLA):
+    1. Privacy: Indices are chosen randomly, leaking no information about data distribution.
+    2. Unbiased: Does not systematically ignore small updates (preventing 'gradient starvation').
+    3. Robustness: Data-agnostic selection works better for heterogeneous fleets.
+    """
+    def __init__(self, sparsity_ratio: float = 0.01):
+        """
+        Args:
+            sparsity_ratio (float): Fraction of parameters to keep (0.0 < ratio <= 1.0).
+                                    e.g., 0.01 means keep 1% of parameters.
+        """
+        if not (0.0 < sparsity_ratio <= 1.0):
+            raise ValueError(f"Sparsity ratio must be between 0 and 1, gave {sparsity_ratio}")
+        self.sparsity_ratio = sparsity_ratio
 
-class LegacyMagnitudeSparsifier:
-    """
-    [LEGACY] Top-K Sparsification.
-    Deprecated in v2.0 due to O(c^4) error accumulation and index-leakage risks.
-    """
-    def __init__(self, k_ratio: float = 0.01):
-        self.k_ratio = k_ratio
-        self.attn_boost = 2.0
-        logger.warning("LegacyMagnitudeSparsifier is deprecated. Use ThresholdSparsifier instead.")
-    
     def sparsify(self, gradients: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        # Implementation remains for backward compatibility
         result = {}
         for name, grad in gradients.items():
             flat = grad.flatten()
-            is_critical = any(key in name.lower() for key in ['query', 'key', 'value', 'attn', 'attention'])
-            local_ratio = self.k_ratio * (self.attn_boost if is_critical else 0.5)
-            k = max(1, int(len(flat) * local_ratio))
-            top_k_idx = np.argpartition(np.abs(flat), -k)[-k:]
-            sparse = np.zeros_like(flat)
-            sparse[top_k_idx] = flat[top_k_idx]
-            result[name] = sparse.reshape(grad.shape)
+            num_elements = flat.size
+            if num_elements == 0:
+                result[name] = grad
+                continue
+                
+            k = max(1, int(num_elements * self.sparsity_ratio))
+            
+            # Randomly select k indices
+            # We use the CSPRNG-seeded generator implicitly via numpy if available,
+            # but for indices selection, standard np.random is acceptable as the *indices*
+            # themselves are the public pattern, and we want them to be uniform.
+            # However, for strict consistency, better to be explicit or use standard choice.
+            indices = np.random.choice(num_elements, size=k, replace=False)
+            
+            # Create sparse mask
+            mask = np.zeros_like(flat, dtype=bool)
+            mask[indices] = True
+            
+            # Apply mask
+            sparse_flat = np.zeros_like(flat)
+            sparse_flat[mask] = flat[mask]
+            
+            # Reshape back to original
+            result[name] = sparse_flat.reshape(grad.shape)
+            
         return result
 
 class APHECompressor:

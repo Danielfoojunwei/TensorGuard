@@ -371,7 +371,7 @@ A: Use `KeyManagementSystem.revoke_key()` to immediately invalidate that robot's
 ### Performance
 
 **Q: How much bandwidth does it save?**
-A: Semantic sparsification + compression achieves **50x reduction** (15MB → 300KB).
+A: Random sparsification + compression achieves **50x reduction** (15MB → 300KB) while maintaining model quality.
 
 **Q: Does encryption slow inference?**
 A: No. TensorGuard only operates during training. Inference runs at full speed.

@@ -37,12 +37,16 @@ class N2HEParams:
     Aligned with HintSight's N2HE and MOAI (IACR 2025/991) modular optimizations.
     """
     n: int = settings.LATTICE_DIMENSION
-    q: int = 2**32 if settings.SECURITY_LEVEL == 128 else 2**48
+    q: Optional[int] = None
     # mu: Parameter for Skellam distribution (difference of two Poissons)
     # mu = 0.5 * (1 / epsilon^2) roughly for DP guarantees.
     mu: float = field(default_factory=lambda: 0.5 * (1.0 / (settings.DP_EPSILON ** 2)) if settings.DP_EPSILON > 0 else 3.2)
     t: int = settings.PLAINTEXT_MODULUS
     security_bits: int = settings.SECURITY_LEVEL
+
+    def __post_init__(self):
+        if self.q is None:
+            self.q = 2**48 if self.security_bits >= 192 else 2**32
     
     @property
     def delta(self) -> int:
